@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-multipart
+sqlalchemy
+apscheduler
+twilio
+python-dotenv
+pillow
+groq
+requests
