@@ -1,8 +1,13 @@
 const API = "/api";
 
 export async function getProducts() {
-  const res = await fetch(`${API}/products`, { cache: "no-store" });
-  return res.json();
+  try {
+    const res = await fetch(`${API}/products`, { cache: "no-store" });
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function getDashboard() {
