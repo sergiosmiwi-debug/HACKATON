@@ -3,64 +3,36 @@ import { useEffect, useState, useCallback } from "react";
 import { getProducts, markOpened, discardProduct } from "@/lib/api";
 import ProductCard from "@/components/ProductCard";
 import BottomNav from "@/components/BottomNav";
-import { ArrowClockwise, CheckSquare, X, Trash } from "@phosphor-icons/react";
+import { ArrowClockwise, CheckSquare, X, Trash, Leaf } from "@phosphor-icons/react";
 
 type Product = {
-  id: number;
-  name: string;
-  category: string;
-  quantity: string;
-  days_left: number | null;
-  status: string;
-  purchase_price: number;
+  id: number; name: string; category: string; quantity: string;
+  days_left: number | null; status: string; purchase_price: number;
   removing?: boolean;
 };
 
 const FILTERS = [
-  { key: "all",     label: "Todos"   },
-  { key: "danger",  label: "Urgente" },
-  { key: "warning", label: "Pronto"  },
-  { key: "fresh",   label: "Frescos" },
-  { key: "expired", label: "Vencidos"},
+  { key: "all",     label: "Todos"    },
+  { key: "danger",  label: "Urgente"  },
+  { key: "warning", label: "Pronto"   },
+  { key: "fresh",   label: "Frescos"  },
+  { key: "expired", label: "Vencidos" },
 ];
 
 const EASE = "cubic-bezier(0.23, 1, 0.32, 1)";
 
-function animateOut(
-  ids: number[],
-  setProducts: React.Dispatch<React.SetStateAction<Product[]>>,
-  after?: () => void
-) {
-  setProducts((p) => p.map((x) => (ids.includes(x.id) ? { ...x, removing: true } : x)));
-  setTimeout(() => {
-    setProducts((p) => p.filter((x) => !ids.includes(x.id)));
-    after?.();
-  }, 370);
-}
-
-/* ─── Skeleton loader ─────────────────────────── */
-function CardSkeleton({ delay }: { delay: number }) {
-  return (
-    <div
-      className="rounded-2xl anim-card"
-      style={{
-        height: 96,
-        background: "var(--surface)",
-        border: "1px solid var(--border-lo)",
-        animationDelay: `${delay}ms`,
-        opacity: 0.6,
-      }}
-    />
-  );
+function animateOut(ids: number[], set: React.Dispatch<React.SetStateAction<Product[]>>, after?: () => void) {
+  set((p) => p.map((x) => (ids.includes(x.id) ? { ...x, removing: true } : x)));
+  setTimeout(() => { set((p) => p.filter((x) => !ids.includes(x.id))); after?.(); }, 370);
 }
 
 export default function Home() {
-  const [products, setProducts]   = useState<Product[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [filter, setFilter]       = useState("all");
-  const [selectMode, setSelect]   = useState(false);
-  const [selected, setSelected]   = useState<Set<number>>(new Set());
-  const [loadKey, setLoadKey]     = useState(0);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [filter, setFilter]     = useState("all");
+  const [selectMode, setSel]    = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [loadKey, setLoadKey]   = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -71,86 +43,54 @@ export default function Home() {
 
   useEffect(() => { load(); }, [load, loadKey]);
 
-  function toggleId(id: number) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+  function toggle(id: number) {
+    setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   }
+  function exitSel() { setSel(false); setSelected(new Set()); }
 
-  function exitSelect() {
-    setSelect(false);
-    setSelected(new Set());
-  }
+  async function handleOpen(id: number) { await markOpened(id); setLoadKey((k) => k + 1); }
+  function handleDiscard(id: number) { discardProduct(id); animateOut([id], setProducts); }
+  function handleDiscardSel() { const ids = [...selected]; ids.forEach((id) => discardProduct(id)); animateOut(ids, setProducts, exitSel); }
+  function handleClearAll() { const ids = products.map((p) => p.id); ids.forEach((id) => discardProduct(id)); animateOut(ids, setProducts); }
 
-  async function handleOpen(id: number) {
-    await markOpened(id);
-    setLoadKey((k) => k + 1);
-  }
-
-  function handleDiscard(id: number) {
-    discardProduct(id);
-    animateOut([id], setProducts);
-  }
-
-  function handleDiscardSelected() {
-    const ids = [...selected];
-    ids.forEach((id) => discardProduct(id));
-    animateOut(ids, setProducts, exitSelect);
-  }
-
-  function handleClearAll() {
-    const ids = products.map((p) => p.id);
-    ids.forEach((id) => discardProduct(id));
-    animateOut(ids, setProducts);
-  }
-
-  const visible = products.filter((p) => !p.removing);
+  const visible  = products.filter((p) => !p.removing);
   const filtered = filter === "all" ? visible : visible.filter((p) => p.status === filter);
-  const urgentCount = visible.filter((p) => p.status === "danger" || p.status === "expired").length;
+  const urgent   = visible.filter((p) => p.status === "danger" || p.status === "expired").length;
 
   return (
     <div className="pb-28">
-      {/* ── Header ── */}
+      {/* ── Header (brand green) ── */}
       <div
         className="sticky top-0 z-10 px-5 pt-12 pb-4"
-        style={{ background: "var(--bg)", borderBottom: "1px solid var(--border-lo)" }}
+        style={{ background: "var(--brand)" }}
       >
         <div className="flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full inline-block" style={{ background: "var(--brand)" }} />
-              <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--ink-1)" }}>
-                FreshTrack
-              </h1>
-              {urgentCount > 0 && !selectMode && (
-                <span
-                  className="text-[10px] font-bold rounded-full px-2 py-0.5"
-                  style={{ color: "var(--danger-text)", background: "var(--danger-bg)" }}
-                >
-                  {urgentCount} urgente{urgentCount !== 1 ? "s" : ""}
-                </span>
-              )}
-            </div>
-            <p className="text-sm mt-0.5" style={{ color: "var(--ink-3)" }}>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--brand-text)", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+              FreshTrack
+            </h1>
+            <p style={{ fontSize: 12, color: "oklch(1 0 0 / 0.55)", marginTop: 2 }}>
               {visible.length} {visible.length === 1 ? "producto" : "productos"}
+              {urgent > 0 && !selectMode && ` · ${urgent} urgente${urgent !== 1 ? "s" : ""}`}
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {!selectMode ? (
               <>
                 {visible.length > 0 && (
                   <button
-                    onClick={() => setSelect(true)}
-                    className="flex items-center gap-1.5 text-xs font-semibold rounded-xl active:scale-[0.95]"
+                    onClick={() => setSel(true)}
+                    className="active:scale-[0.95]"
                     style={{
-                      color: "var(--ink-2)",
-                      background: "var(--surface)",
-                      border: "1px solid var(--border-lo)",
-                      padding: "6px 10px",
+                      display: "flex", alignItems: "center", gap: 5,
+                      fontSize: 12, fontWeight: 600,
+                      color: "var(--brand-text)",
+                      background: "oklch(1 0 0 / 0.15)",
+                      borderRadius: 10, padding: "6px 10px",
                       transition: "transform 80ms ease",
+                      cursor: "pointer",
+                      border: "none",
                     }}
                   >
                     <CheckSquare size={13} />
@@ -159,13 +99,16 @@ export default function Home() {
                 )}
                 <button
                   onClick={load}
-                  className="flex items-center justify-center rounded-xl active:scale-[0.95]"
+                  className="active:scale-[0.95]"
                   style={{
                     width: 34, height: 34,
-                    color: "var(--ink-2)",
-                    background: "var(--surface)",
-                    border: "1px solid var(--border-lo)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "var(--brand-text)",
+                    background: "oklch(1 0 0 / 0.15)",
+                    borderRadius: 10,
                     transition: "transform 80ms ease",
+                    cursor: "pointer",
+                    border: "none",
                   }}
                 >
                   <ArrowClockwise size={15} />
@@ -173,14 +116,17 @@ export default function Home() {
               </>
             ) : (
               <button
-                onClick={exitSelect}
-                className="flex items-center gap-1.5 text-xs font-semibold rounded-xl active:scale-[0.95]"
+                onClick={exitSel}
+                className="active:scale-[0.95]"
                 style={{
-                  color: "var(--ink-2)",
-                  background: "var(--surface)",
-                  border: "1px solid var(--border-lo)",
-                  padding: "6px 10px",
+                  display: "flex", alignItems: "center", gap: 5,
+                  fontSize: 12, fontWeight: 600,
+                  color: "var(--brand-text)",
+                  background: "oklch(1 0 0 / 0.15)",
+                  borderRadius: 10, padding: "6px 10px",
                   transition: "transform 80ms ease",
+                  cursor: "pointer",
+                  border: "none",
                 }}
               >
                 <X size={13} />
@@ -190,22 +136,23 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Filters / Select-all row */}
+        {/* Filters */}
         {!selectMode ? (
-          <div className="flex gap-1.5 mt-4 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none" }}>
+          <div className="flex gap-1.5 mt-3 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none" }}>
             {FILTERS.map(({ key, label }) => {
               const active = filter === key;
               return (
                 <button
                   key={key}
                   onClick={() => setFilter(key)}
-                  className="shrink-0 text-xs font-semibold rounded-full"
                   style={{
-                    padding: "5px 12px",
-                    color: active ? "var(--bg)" : "var(--ink-3)",
-                    background: active ? "var(--brand)" : "var(--surface)",
-                    border: active ? "1px solid transparent" : "1px solid var(--border-lo)",
+                    flexShrink: 0, fontSize: 11, fontWeight: 600,
+                    padding: "5px 12px", borderRadius: 99,
+                    color: active ? "var(--brand)" : "oklch(1 0 0 / 0.65)",
+                    background: active ? "var(--brand-text)" : "oklch(1 0 0 / 0.12)",
+                    border: "none",
                     transition: "background 150ms ease, color 150ms ease",
+                    cursor: "pointer",
                   }}
                 >
                   {label}
@@ -214,17 +161,13 @@ export default function Home() {
             })}
           </div>
         ) : (
-          <div className="flex items-center justify-between mt-3">
-            <span className="text-xs" style={{ color: "var(--ink-3)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
+            <span style={{ fontSize: 12, color: "oklch(1 0 0 / 0.55)" }}>
               {selected.size} seleccionado{selected.size !== 1 ? "s" : ""}
             </span>
             <button
-              onClick={() => {
-                const all = new Set(filtered.map((p) => p.id));
-                setSelected(selected.size === filtered.length ? new Set() : all);
-              }}
-              className="text-xs font-semibold"
-              style={{ color: "var(--brand)" }}
+              onClick={() => setSelected(selected.size === filtered.length ? new Set() : new Set(filtered.map((p) => p.id)))}
+              style={{ fontSize: 12, fontWeight: 600, color: "var(--brand-text)", background: "none", border: "none", cursor: "pointer" }}
             >
               {selected.size === filtered.length ? "Deseleccionar todo" : "Seleccionar todo"}
             </button>
@@ -233,21 +176,36 @@ export default function Home() {
       </div>
 
       {/* ── List ── */}
-      <div className="px-4 py-4 flex flex-col" style={{ gap: 0 }}>
+      <div style={{ padding: "16px 16px 0" }}>
         {loading ? (
-          <div className="flex flex-col gap-2.5">
-            {[0, 1, 2].map((i) => <CardSkeleton key={i} delay={i * 60} />)}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="anim-card rounded-2xl"
+                style={{
+                  height: 88,
+                  background: "var(--surface)",
+                  border: "1px solid var(--border-lo)",
+                  animationDelay: `${i * 60}ms`,
+                  opacity: 0.7,
+                }}
+              />
+            ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-              style={{ background: "var(--surface)" }}
-            >
-              <span style={{ fontSize: 24 }}>🧊</span>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 80, textAlign: "center" }}>
+            <div style={{
+              width: 56, height: 56,
+              background: "var(--brand-bg)",
+              borderRadius: 16,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              marginBottom: 16,
+            }}>
+              <Leaf size={26} style={{ color: "var(--brand)" }} />
             </div>
-            <p className="font-semibold" style={{ color: "var(--ink-1)" }}>Nada por aquí</p>
-            <p className="text-sm mt-1" style={{ color: "var(--ink-3)" }}>
+            <p style={{ fontWeight: 700, fontSize: 15, color: "var(--ink-1)" }}>Nada por aquí</p>
+            <p style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
               Escanea un ticket o foto de tu refri
             </p>
           </div>
@@ -259,23 +217,20 @@ export default function Home() {
                 display: "grid",
                 gridTemplateRows: p.removing ? "0fr" : "1fr",
                 opacity: p.removing ? 0 : 1,
-                transform: p.removing ? "translateX(16px)" : "translateX(0)",
+                transform: p.removing ? "translateX(14px)" : "translateX(0)",
                 marginBottom: p.removing ? 0 : 10,
-                transition: `grid-template-rows 340ms ${EASE}, opacity 260ms ${EASE}, transform 260ms ${EASE}, margin-bottom 340ms ${EASE}`,
+                transition: `grid-template-rows 340ms ${EASE}, opacity 250ms ${EASE}, transform 250ms ${EASE}, margin-bottom 340ms ${EASE}`,
               }}
             >
               <div style={{ overflow: "hidden" }}>
-                <div
-                  className="anim-card"
-                  style={{ animationDelay: `${Math.min(i * 50, 200)}ms` }}
-                >
+                <div className="anim-card" style={{ animationDelay: `${Math.min(i * 45, 200)}ms` }}>
                   <ProductCard
                     product={p}
                     onOpen={handleOpen}
                     onDiscard={handleDiscard}
                     selectMode={selectMode}
                     selected={selected.has(p.id)}
-                    onSelect={toggleId}
+                    onSelect={toggle}
                   />
                 </div>
               </div>
@@ -284,52 +239,57 @@ export default function Home() {
         )}
       </div>
 
-      {/* ── Select mode action bar ── */}
+      {/* ── Select action bar ── */}
       {selectMode && (
         <div
           className="fixed left-0 right-0 max-w-md mx-auto px-4 anim-bar"
           style={{ bottom: 72, zIndex: 20 }}
         >
-          <div
-            className="flex gap-2 rounded-2xl p-3"
-            style={{
-              background: "var(--surface-hi)",
-              border: "1px solid var(--border)",
-            }}
-          >
+          <div style={{
+            display: "flex", gap: 8,
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: 18, padding: 10,
+            boxShadow: "0 4px 24px oklch(0.18 0.02 250 / 0.10)",
+          }}>
             {visible.length > 0 && (
               <button
                 onClick={handleClearAll}
-                className="flex items-center gap-1.5 text-xs font-semibold rounded-xl active:scale-[0.96]"
+                className="active:scale-[0.96]"
                 style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  fontSize: 12, fontWeight: 600,
                   color: "var(--ink-2)",
-                  background: "var(--surface)",
+                  background: "var(--surface-hi)",
                   border: "1px solid var(--border-lo)",
-                  padding: "9px 14px",
+                  borderRadius: 12, padding: "9px 14px",
                   transition: "transform 80ms ease",
+                  cursor: "pointer",
                 }}
               >
-                <Trash size={13} />
+                <Trash size={12} />
                 Limpiar todo
               </button>
             )}
             <button
-              onClick={handleDiscardSelected}
+              onClick={handleDiscardSel}
               disabled={selected.size === 0}
-              className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold rounded-xl active:scale-[0.96]"
+              className="active:scale-[0.96]"
               style={{
-                color: selected.size === 0 ? "var(--muted-text)" : "var(--danger-text)",
+                flex: 1,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                fontSize: 12, fontWeight: 700,
+                color: selected.size === 0 ? "var(--muted)" : "var(--danger-txt)",
                 background: selected.size === 0 ? "var(--muted-bg)" : "var(--danger-bg)",
-                border: `1px solid ${selected.size === 0 ? "transparent" : "var(--danger-bg)"}`,
-                padding: "9px 14px",
+                border: "none",
+                borderRadius: 12, padding: "9px 14px",
                 transition: "transform 80ms ease, background 150ms ease",
+                cursor: selected.size === 0 ? "default" : "pointer",
                 pointerEvents: selected.size === 0 ? "none" : "auto",
               }}
             >
-              <Trash size={13} />
-              Tirar {selected.size > 0
-                ? `${selected.size} seleccionado${selected.size !== 1 ? "s" : ""}`
-                : "seleccionados"}
+              <Trash size={12} />
+              Tirar {selected.size > 0 ? `${selected.size} seleccionado${selected.size !== 1 ? "s" : ""}` : "seleccionados"}
             </button>
           </div>
         </div>

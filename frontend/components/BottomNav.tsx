@@ -5,8 +5,8 @@ import { Snowflake, Camera, ChartBar } from "@phosphor-icons/react";
 
 const tabs = [
   { href: "/",          label: "Inventario", Icon: Snowflake },
-  { href: "/scan",      label: "Escanear",   Icon: Camera },
-  { href: "/dashboard", label: "Resumen",    Icon: ChartBar },
+  { href: "/scan",      label: "Escanear",   Icon: Camera    },
+  { href: "/dashboard", label: "Resumen",    Icon: ChartBar  },
 ];
 
 export default function BottomNav() {
@@ -32,9 +32,7 @@ export default function BottomNav() {
             }}
           >
             <Icon size={22} weight={active ? "fill" : "regular"} />
-            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.02em" }}>
-              {label}
-            </span>
+            <span style={{ fontSize: 10, fontWeight: 600 }}>{label}</span>
           </Link>
         );
       })}

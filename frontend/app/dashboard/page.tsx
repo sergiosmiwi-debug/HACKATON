@@ -2,14 +2,12 @@
 import { useEffect, useState } from "react";
 import { getDashboard } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
-import { ChartBar, Leaf } from "@phosphor-icons/react";
+import { Leaf, Warning } from "@phosphor-icons/react";
 
-/* Mini status bar segments */
 function StatusBar({ data }: { data: any }) {
-  const total = (data.total_products ?? 0);
+  const total = data.total_products ?? 0;
   if (!total) return null;
-
-  const segments = [
+  const segs = [
     { key: "danger",  color: "var(--danger)", count: data.danger_count  ?? 0 },
     { key: "warning", color: "var(--warn)",   count: data.warning_count ?? 0 },
     { key: "fresh",   color: "var(--fresh)",  count: data.fresh_count   ?? 0 },
@@ -18,128 +16,92 @@ function StatusBar({ data }: { data: any }) {
 
   return (
     <div>
-      <div className="flex rounded-full overflow-hidden" style={{ height: 6, background: "var(--border-lo)", gap: 2 }}>
-        {segments.map((s) => (
-          <div
-            key={s.key}
-            style={{
-              flex: s.count,
-              background: s.color,
-              borderRadius: 99,
-              transition: "flex 400ms ease",
-            }}
-          />
+      <div style={{ display: "flex", height: 6, gap: 3, borderRadius: 99, overflow: "hidden", background: "var(--border-lo)" }}>
+        {segs.map((s) => (
+          <div key={s.key} style={{ flex: s.count, background: s.color, borderRadius: 99, transition: "flex 400ms ease" }} />
         ))}
       </div>
-      <div className="flex justify-between mt-2">
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
         {[
-          { label: "Urgente",  count: data.danger_count  ?? 0, color: "var(--danger-text)" },
-          { label: "Pronto",   count: data.warning_count ?? 0, color: "var(--warn-text)"   },
-          { label: "Frescos",  count: data.fresh_count   ?? 0, color: "var(--fresh-text)"  },
-          { label: "Vencidos", count: data.expired_count ?? 0, color: "var(--muted-text)"  },
+          { label: "Urgente",  count: data.danger_count  ?? 0, color: "var(--danger-txt)" },
+          { label: "Pronto",   count: data.warning_count ?? 0, color: "var(--warn-txt)"   },
+          { label: "Frescos",  count: data.fresh_count   ?? 0, color: "var(--fresh-txt)"  },
+          { label: "Vencidos", count: data.expired_count ?? 0, color: "var(--muted-txt)"  },
         ].map(({ label, count, color }) => (
-          <div key={label} className="text-center">
-            <p className="text-base font-bold" style={{ color }}>{count}</p>
-            <p className="text-[10px]" style={{ color: "var(--ink-3)" }}>{label}</p>
+          <div key={label} style={{ textAlign: "center" }}>
+            <p style={{ fontSize: 22, fontWeight: 800, color, letterSpacing: "-0.03em", lineHeight: 1 }}>{count}</p>
+            <p style={{ fontSize: 10, fontWeight: 600, color: "var(--ink-3)", marginTop: 3 }}>{label}</p>
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-function Skeleton() {
-  return (
-    <div className="px-4 py-5 flex flex-col gap-3">
-      {[96, 80, 120].map((h, i) => (
-        <div
-          key={i}
-          className="rounded-2xl"
-          style={{ height: h, background: "var(--surface)", opacity: 0.5 }}
-        />
-      ))}
     </div>
   );
 }
 
 export default function DashboardPage() {
   const [data, setData] = useState<any>(null);
-
   useEffect(() => { getDashboard().then(setData); }, []);
 
   return (
     <div className="pb-28">
       {/* Header */}
-      <div
-        className="px-5 pt-12 pb-5"
-        style={{ borderBottom: "1px solid var(--border-lo)" }}
-      >
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full" style={{ background: "var(--brand)" }} />
-          <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--ink-1)" }}>
-            FreshTrack
-          </h1>
-        </div>
-        <p className="text-sm mt-0.5" style={{ color: "var(--ink-3)" }}>Resumen de tu refri</p>
+      <div className="px-5 pt-12 pb-5" style={{ background: "var(--brand)" }}>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--brand-text)", letterSpacing: "-0.02em" }}>
+          FreshTrack
+        </h1>
+        <p style={{ fontSize: 12, color: "oklch(1 0 0 / 0.55)", marginTop: 2 }}>Resumen de tu refri</p>
       </div>
 
       {!data ? (
-        <Skeleton />
+        <div style={{ padding: "16px 16px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+          {[100, 80, 120].map((h, i) => (
+            <div key={i} className="anim-card rounded-2xl" style={{ height: h, background: "var(--surface)", border: "1px solid var(--border-lo)", animationDelay: `${i * 60}ms`, opacity: 0.7 }} />
+          ))}
+        </div>
       ) : (
-        <div className="px-4 py-5 flex flex-col gap-3">
+        <div style={{ padding: "16px 16px 0", display: "flex", flexDirection: "column", gap: 10 }}>
 
-          {/* Waste card */}
-          <div
-            className="rounded-2xl p-5"
-            style={{ background: "var(--surface)", border: "1px solid var(--border-lo)" }}
-          >
-            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--ink-3)" }}>
+          {/* Waste */}
+          <div style={{ background: "var(--surface)", border: "1px solid var(--border-lo)", borderRadius: 20, padding: 20 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)" }}>
               Dinero desperdiciado
             </p>
-            <p className="text-5xl font-bold tracking-tighter" style={{ color: "var(--ink-1)" }}>
+            <p style={{ fontSize: 44, fontWeight: 800, letterSpacing: "-0.04em", color: "var(--ink-1)", lineHeight: 1.05, marginTop: 8 }}>
               S/ {data.total_wasted.toFixed(2)}
             </p>
-            <p className="text-sm mt-2" style={{ color: "var(--ink-3)" }}>
+            <p style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 6 }}>
               {data.waste_count} producto{data.waste_count !== 1 ? "s" : ""} tirado{data.waste_count !== 1 ? "s" : ""}
             </p>
             {data.total_wasted > 0 && (
-              <p className="text-xs mt-3 pt-3" style={{ color: "var(--warn-text)", borderTop: "1px solid var(--border-lo)" }}>
-                Proyección mensual: <strong>S/ {(data.total_wasted * 4).toFixed(2)}</strong> si continúa este patrón
-              </p>
+              <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--border-lo)" }}>
+                <p style={{ fontSize: 12, color: "var(--warn-txt)" }}>
+                  Proyección mensual: <strong>S/ {(data.total_wasted * 4).toFixed(2)}</strong> si continúa este patrón
+                </p>
+              </div>
             )}
           </div>
 
           {/* Estado del refri */}
-          <div
-            className="rounded-2xl p-5"
-            style={{ background: "var(--surface)", border: "1px solid var(--border-lo)" }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--ink-3)" }}>
+          <div style={{ background: "var(--surface)", border: "1px solid var(--border-lo)", borderRadius: 20, padding: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)" }}>
                 Estado del refri
               </p>
-              <span className="text-sm font-bold" style={{ color: "var(--ink-1)" }}>
-                {data.total_products} total
+              <span style={{ fontSize: 20, fontWeight: 800, color: "var(--ink-1)", letterSpacing: "-0.03em" }}>
+                {data.total_products}
               </span>
             </div>
-
-            {data.total_products > 0 ? (
-              <StatusBar data={data} />
-            ) : (
-              <p className="text-sm text-center py-2" style={{ color: "var(--ink-3)" }}>
-                Sin productos aún
-              </p>
-            )}
+            {data.total_products > 0
+              ? <StatusBar data={data} />
+              : <p style={{ fontSize: 13, color: "var(--ink-3)", textAlign: "center" }}>Sin productos aún</p>
+            }
           </div>
 
-          {/* Próximos a vencer */}
+          {/* Warning próximos */}
           {data.expiring_soon > 0 && (
-            <div
-              className="rounded-2xl p-4 flex items-center gap-3"
-              style={{ background: "var(--warn-bg)", border: "1px solid var(--warn-bg)" }}
-            >
-              <ChartBar size={18} style={{ color: "var(--warn-text)", flexShrink: 0 }} />
-              <p className="text-sm" style={{ color: "var(--warn-text)" }}>
+            <div style={{ background: "var(--warn-bg)", border: "1px solid var(--warn-bg)", borderRadius: 20, padding: 16, display: "flex", gap: 10, alignItems: "center" }}>
+              <Warning size={18} style={{ color: "var(--warn)", flexShrink: 0 }} />
+              <p style={{ fontSize: 13, color: "var(--warn-txt)" }}>
                 <strong>{data.expiring_soon}</strong> producto{data.expiring_soon !== 1 ? "s" : ""} vence{data.expiring_soon !== 1 ? "n" : ""} en los próximos 3 días
               </p>
             </div>
@@ -147,13 +109,13 @@ export default function DashboardPage() {
 
           {/* Zero state */}
           {data.total_wasted === 0 && data.total_products === 0 && (
-            <div
-              className="rounded-2xl p-8 flex flex-col items-center text-center"
-              style={{ background: "var(--surface)", border: "1px solid var(--border-lo)" }}
-            >
+            <div style={{
+              background: "var(--surface)", border: "1px solid var(--border-lo)", borderRadius: 20,
+              padding: 40, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center",
+            }}>
               <Leaf size={28} style={{ color: "var(--fresh)", marginBottom: 12 }} />
-              <p className="font-semibold" style={{ color: "var(--ink-1)" }}>Sin datos aún</p>
-              <p className="text-sm mt-1" style={{ color: "var(--ink-3)" }}>
+              <p style={{ fontWeight: 700, color: "var(--ink-1)" }}>Sin datos aún</p>
+              <p style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
                 Escanea tu primer ticket para empezar
               </p>
             </div>

@@ -1,49 +1,47 @@
 @import "tailwindcss";
 
-/* ─── Design tokens ─────────────────────────────── */
+/* ─── Tokens ─────────────────────────────────────── */
 :root {
-  /* Base */
-  --bg:          oklch(0.13 0.008 245);
-  --surface:     oklch(0.19 0.012 245);
-  --surface-hi:  oklch(0.26 0.016 245);
-  --border:      oklch(0.29 0.010 245);
-  --border-lo:   oklch(0.21 0.008 245);
+  /* Surface */
+  --bg:         oklch(0.97 0.006 148);
+  --surface:    oklch(1 0 0);
+  --surface-hi: oklch(0.95 0.008 148);
+  --border:     oklch(0.91 0.010 148);
+  --border-lo:  oklch(0.94 0.007 148);
 
   /* Text */
-  --ink-1: oklch(0.95 0.004 245);
-  --ink-2: oklch(0.60 0.012 245);
-  --ink-3: oklch(0.50 0.008 245);
+  --ink-1: oklch(0.18 0.02 250);
+  --ink-2: oklch(0.42 0.01 250);
+  --ink-3: oklch(0.60 0.01 250);
 
-  /* Brand */
-  --brand:    oklch(0.74 0.18 148);
-  --brand-bg: oklch(0.74 0.18 148 / 0.14);
+  /* Brand (deep forest green) */
+  --brand:      oklch(0.28 0.10 148);
+  --brand-mid:  oklch(0.38 0.12 148);
+  --brand-text: oklch(1 0 0);
+  --brand-bg:   oklch(0.95 0.05 148);
 
-  /* Status */
-  --fresh:        oklch(0.72 0.17 148);
-  --fresh-bg:     oklch(0.72 0.17 148 / 0.13);
-  --fresh-text:   oklch(0.82 0.15 148);
+  /* Status — dark enough to pass 4.5:1 on white */
+  --fresh:     oklch(0.46 0.14 148);
+  --fresh-bg:  oklch(0.95 0.06 148);
+  --fresh-txt: oklch(0.34 0.10 148);
 
-  --warn:         oklch(0.80 0.17 78);
-  --warn-bg:      oklch(0.80 0.17 78 / 0.13);
-  --warn-text:    oklch(0.90 0.13 78);
+  --warn:      oklch(0.55 0.14 75);
+  --warn-bg:   oklch(0.96 0.05 75);
+  --warn-txt:  oklch(0.44 0.12 75);
 
-  --danger:       oklch(0.64 0.23 25);
-  --danger-bg:    oklch(0.64 0.23 25 / 0.13);
-  --danger-text:  oklch(0.76 0.18 25);
+  --danger:    oklch(0.50 0.19 25);
+  --danger-bg: oklch(0.96 0.06 25);
+  --danger-txt:oklch(0.40 0.16 25);
 
-  --muted:        oklch(0.44 0.008 245);
-  --muted-bg:     oklch(0.44 0.008 245 / 0.12);
-  --muted-text:   oklch(0.58 0.008 245);
+  --muted:     oklch(0.50 0.01 250);
+  --muted-bg:  oklch(0.94 0.004 250);
+  --muted-txt: oklch(0.42 0.01 250);
 
-  /* Easing */
-  --ease-out:   cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-inout: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* ─── Base ──────────────────────────────────────── */
+/* ─── Base ───────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
-
-html { color-scheme: dark; }
 
 body {
   background: var(--bg);
@@ -54,35 +52,26 @@ body {
 }
 
 * { -webkit-tap-highlight-color: transparent; }
+::-webkit-scrollbar { width: 0; height: 0; }
 
-/* ─── Animations ────────────────────────────────── */
+/* ─── Animations ─────────────────────────────────── */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0);   }
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes fadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
 
-.anim-card {
-  animation: fadeUp 240ms var(--ease-out) both;
-}
+.anim-card { animation: fadeUp 220ms var(--ease-out) both; }
+.anim-bar  { animation: fadeIn 180ms var(--ease-out) both; }
 
-.anim-bar {
-  animation: fadeIn 200ms var(--ease-out) both;
-}
-
-/* Reduced motion: crossfades only, no movement */
 @media (prefers-reduced-motion: reduce) {
-  .anim-card { animation: fadeIn 150ms ease both; }
+  .anim-card { animation: fadeIn 120ms ease both; }
   .anim-bar  { animation: none; }
   *, *::before, *::after {
     transition-duration: 0.01ms !important;
     animation-duration:  0.01ms !important;
   }
 }
-
-/* Scrollbar in dark */
-::-webkit-scrollbar { width: 0; height: 0; }

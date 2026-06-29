@@ -5,7 +5,8 @@
       "PowerShell(python --version)",
       "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\sergi\\\\OneDrive\\\\Escritorio\\\\HACKATON\\\\frontend\\\\app\\\\scan\")",
       "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\sergi\\\\OneDrive\\\\Escritorio\\\\HACKATON\\\\frontend\\\\app\\\\dashboard\")",
-      "PowerShell(\"dirs created\")"
+      "PowerShell(\"dirs created\")",
+      "Bash(node .github/skills/impeccable/scripts/context.mjs)"
     ]
   }
 }
