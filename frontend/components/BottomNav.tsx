@@ -1,11 +1,11 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Package, ScanLine, ChartBar } from "@phosphor-icons/react";
+import { Package, Scan, ChartBar } from "@phosphor-icons/react";
 
 const LINKS = [
   { href: "/",          label: "Inventario", Icon: Package  },
-  { href: "/scan",      label: "Escanear",   Icon: ScanLine },
+  { href: "/scan",      label: "Escanear",   Icon: Scan     },
   { href: "/dashboard", label: "Resumen",    Icon: ChartBar },
 ];
 
