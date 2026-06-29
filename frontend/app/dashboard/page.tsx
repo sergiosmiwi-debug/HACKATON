@@ -49,7 +49,7 @@ export default function DashboardPage() {
         <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--brand-text)", letterSpacing: "-0.02em" }}>
           FreshTrack
         </h1>
-        <p style={{ fontSize: 12, color: "oklch(1 0 0 / 0.55)", marginTop: 2 }}>Resumen de tu refri</p>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>Resumen de tu refri</p>
       </div>
 
       {!data ? (

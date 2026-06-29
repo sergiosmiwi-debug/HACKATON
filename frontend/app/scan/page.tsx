@@ -71,7 +71,7 @@ export default function ScanPage() {
       {/* Header */}
       <div className="px-5 pt-12 pb-5" style={{ background: "var(--brand)" }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--brand-text)", letterSpacing: "-0.02em" }}>FreshTrack</h1>
-        <p style={{ fontSize: 12, color: "oklch(1 0 0 / 0.55)", marginTop: 2 }}>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>
           {mode ? (mode === "receipt" ? "Ticket de compra" : "Foto del refri") : "Elige qué escanear"}
         </p>
       </div>

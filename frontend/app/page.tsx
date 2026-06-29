@@ -69,7 +69,7 @@ export default function Home() {
             <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--brand-text)", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
               FreshTrack
             </h1>
-            <p style={{ fontSize: 12, color: "oklch(1 0 0 / 0.55)", marginTop: 2 }}>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>
               {visible.length} {visible.length === 1 ? "producto" : "productos"}
               {urgent > 0 && !selectMode && ` · ${urgent} urgente${urgent !== 1 ? "s" : ""}`}
             </p>
@@ -104,7 +104,7 @@ export default function Home() {
                     width: 34, height: 34,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     color: "var(--brand-text)",
-                    background: "oklch(1 0 0 / 0.15)",
+                    background: "rgba(255,255,255,0.15)",
                     borderRadius: 10,
                     transition: "transform 80ms ease",
                     cursor: "pointer",
@@ -122,7 +122,7 @@ export default function Home() {
                   display: "flex", alignItems: "center", gap: 5,
                   fontSize: 12, fontWeight: 600,
                   color: "var(--brand-text)",
-                  background: "oklch(1 0 0 / 0.15)",
+                  background: "rgba(255,255,255,0.15)",
                   borderRadius: 10, padding: "6px 10px",
                   transition: "transform 80ms ease",
                   cursor: "pointer",
@@ -148,8 +148,8 @@ export default function Home() {
                   style={{
                     flexShrink: 0, fontSize: 11, fontWeight: 600,
                     padding: "5px 12px", borderRadius: 99,
-                    color: active ? "var(--brand)" : "oklch(1 0 0 / 0.65)",
-                    background: active ? "var(--brand-text)" : "oklch(1 0 0 / 0.12)",
+                    color: active ? "var(--brand)" : "rgba(255,255,255,0.70)",
+                    background: active ? "var(--brand-text)" : "rgba(255,255,255,0.13)",
                     border: "none",
                     transition: "background 150ms ease, color 150ms ease",
                     cursor: "pointer",
@@ -162,7 +162,7 @@ export default function Home() {
           </div>
         ) : (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
-            <span style={{ fontSize: 12, color: "oklch(1 0 0 / 0.55)" }}>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
               {selected.size} seleccionado{selected.size !== 1 ? "s" : ""}
             </span>
             <button

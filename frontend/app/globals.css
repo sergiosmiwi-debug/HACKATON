@@ -3,41 +3,47 @@
 /* ─── Tokens ─────────────────────────────────────── */
 :root {
   /* Surface */
-  --bg:         oklch(0.97 0.006 148);
-  --surface:    oklch(1 0 0);
-  --surface-hi: oklch(0.95 0.008 148);
-  --border:     oklch(0.91 0.010 148);
-  --border-lo:  oklch(0.94 0.007 148);
+  --bg:         #f2f7f3;
+  --surface:    #ffffff;
+  --surface-hi: #edf5ee;
+  --border:     #d8eadb;
+  --border-lo:  #e8f2ea;
 
   /* Text */
-  --ink-1: oklch(0.18 0.02 250);
-  --ink-2: oklch(0.42 0.01 250);
-  --ink-3: oklch(0.60 0.01 250);
+  --ink-1: #1a2220;
+  --ink-2: #4a5652;
+  --ink-3: #7a8a82;
 
   /* Brand (deep forest green) */
-  --brand:      oklch(0.28 0.10 148);
-  --brand-mid:  oklch(0.38 0.12 148);
-  --brand-text: oklch(1 0 0);
-  --brand-bg:   oklch(0.95 0.05 148);
+  --brand:      #1a4a28;
+  --brand-mid:  #286636;
+  --brand-text: #ffffff;
+  --brand-bg:   #e0f2e6;
 
-  /* Status — dark enough to pass 4.5:1 on white */
-  --fresh:     oklch(0.46 0.14 148);
-  --fresh-bg:  oklch(0.95 0.06 148);
-  --fresh-txt: oklch(0.34 0.10 148);
+  /* Status */
+  --fresh:      #2e7d44;
+  --fresh-bg:   #e0f4e6;
+  --fresh-txt:  #1a5c30;
 
-  --warn:      oklch(0.55 0.14 75);
-  --warn-bg:   oklch(0.96 0.05 75);
-  --warn-txt:  oklch(0.44 0.12 75);
+  --warn:       #8c6b10;
+  --warn-bg:    #fdf3d8;
+  --warn-txt:   #6e500c;
 
-  --danger:    oklch(0.50 0.19 25);
-  --danger-bg: oklch(0.96 0.06 25);
-  --danger-txt:oklch(0.40 0.16 25);
+  --danger:     #8c2218;
+  --danger-bg:  #fde8e6;
+  --danger-txt: #701414;
 
-  --muted:     oklch(0.50 0.01 250);
-  --muted-bg:  oklch(0.94 0.004 250);
-  --muted-txt: oklch(0.42 0.01 250);
+  --muted:      #6b7280;
+  --muted-bg:   #f0f2f4;
+  --muted-txt:  #4b5563;
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* ─── Force light mode (override Tailwind v4 dark preflight) ── */
+html {
+  color-scheme: light;
+  background: var(--bg);
 }
 
 /* ─── Base ───────────────────────────────────────── */
