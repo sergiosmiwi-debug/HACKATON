@@ -40,17 +40,18 @@
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* ─── Force light mode (override Tailwind v4 dark preflight) ── */
+/* ─── Force light mode — defeats Tailwind v4 dark Canvas reset ── */
 html {
-  color-scheme: light;
-  background: var(--bg);
+  color-scheme: light !important;
+  background: #f2f7f3 !important;
 }
 
 /* ─── Base ───────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
-  background: var(--bg);
+  background: #f2f7f3 !important;
+  background: var(--bg) !important;
   color: var(--ink-1);
   font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif);
   -webkit-font-smoothing: antialiased;
