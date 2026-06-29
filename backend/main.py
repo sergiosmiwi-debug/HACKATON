@@ -165,11 +165,17 @@ def get_dashboard(db: Session = Depends(get_db)):
     total_wasted = sum(w.price for w in waste_logs)
     products = db.query(Product).filter(Product.status != "discarded").all()
     expiring_soon = [p for p in products if p.expiry_date and (p.expiry_date - datetime.utcnow()).days <= 3]
+    from collections import Counter
+    status_counts = Counter(p.status for p in products)
     return {
-        "total_wasted": round(total_wasted, 2),
-        "waste_count": len(waste_logs),
+        "total_wasted":  round(total_wasted, 2),
+        "waste_count":   len(waste_logs),
         "expiring_soon": len(expiring_soon),
         "total_products": len(products),
+        "fresh_count":   status_counts.get("fresh", 0),
+        "warning_count": status_counts.get("warning", 0),
+        "danger_count":  status_counts.get("danger", 0),
+        "expired_count": status_counts.get("expired", 0),
     }
 
 # --- Notifications (manual trigger para demo) ---
