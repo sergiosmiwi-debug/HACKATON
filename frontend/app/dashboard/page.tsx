@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { getDashboard } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
+import { ChartBar, Trash, Package, WarningCircle, Leaf } from "@phosphor-icons/react";
 
 export default function DashboardPage() {
   const [data, setData] = useState<any>(null);
@@ -10,57 +11,104 @@ export default function DashboardPage() {
     getDashboard().then(setData);
   }, []);
 
-  if (!data) return (
-    <div className="flex items-center justify-center min-h-screen text-slate-400">Cargando...</div>
-  );
+  if (!data) {
+    return (
+      <div className="pb-24">
+        <div className="bg-white px-5 pt-12 pb-5 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 bg-green-700 rounded-xl flex items-center justify-center">
+              <ChartBar size={18} weight="fill" className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-[17px] font-bold text-slate-900">Resumen</h1>
+              <p className="text-[11px] text-slate-400">Tu impacto alimentario</p>
+            </div>
+          </div>
+        </div>
+        <div className="px-4 py-5 flex flex-col gap-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl h-28 animate-pulse border border-slate-100" />
+          ))}
+        </div>
+        <BottomNav />
+      </div>
+    );
+  }
+
+  const monthlyProjection = (data.total_wasted * 4).toFixed(2);
 
   return (
     <div className="pb-24">
-      <div className="bg-white px-5 pt-12 pb-5 border-b border-slate-100 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-800">📊 Resumen</h1>
-        <p className="text-sm text-slate-400 mt-1">Tu impacto alimentario</p>
+      <div className="bg-white px-5 pt-12 pb-5 border-b border-slate-100">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 bg-green-700 rounded-xl flex items-center justify-center">
+            <ChartBar size={18} weight="fill" className="text-white" />
+          </div>
+          <div>
+            <h1 className="text-[17px] font-bold text-slate-900">Resumen</h1>
+            <p className="text-[11px] text-slate-400">Tu impacto alimentario</p>
+          </div>
+        </div>
       </div>
 
-      <div className="px-4 py-5 flex flex-col gap-4">
-        {/* Dinero desperdiciado */}
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-center">
-          <p className="text-sm text-red-500 font-medium uppercase tracking-wide mb-1">Dinero desperdiciado</p>
-          <p className="text-5xl font-bold text-red-600">S/ {data.total_wasted.toFixed(2)}</p>
-          <p className="text-sm text-red-400 mt-2">{data.waste_count} producto{data.waste_count !== 1 ? "s" : ""} tirado{data.waste_count !== 1 ? "s" : ""}</p>
+      <div className="px-4 py-5 flex flex-col gap-3">
+        <div className="bg-slate-900 rounded-2xl p-5 text-white">
+          <div className="flex items-center gap-2 mb-3">
+            <Trash size={14} className="text-red-400" />
+            <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">Dinero desperdiciado</span>
+          </div>
+          <p className="text-5xl font-bold tracking-tight">S/ {data.total_wasted.toFixed(2)}</p>
+          <p className="text-sm text-slate-400 mt-2">
+            {data.waste_count} producto{data.waste_count !== 1 ? "s" : ""} tirado{data.waste_count !== 1 ? "s" : ""}
+          </p>
+          {data.total_wasted > 0 && (
+            <div className="mt-4 pt-4 border-t border-slate-800">
+              <p className="text-xs text-slate-400">
+                A este ritmo, desperdicias hasta{" "}
+                <span className="text-red-400 font-bold">S/ {monthlyProjection}</span> al mes
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center">
-            <p className="text-3xl font-bold text-slate-800">{data.total_products}</p>
-            <p className="text-xs text-slate-400 mt-1">Productos en refri</p>
+          <div className="bg-white rounded-2xl p-4 border border-slate-100">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Package size={14} className="text-slate-400" />
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">En refri</span>
+            </div>
+            <p className="text-4xl font-bold text-slate-900">{data.total_products}</p>
+            <p className="text-xs text-slate-400 mt-1">productos activos</p>
           </div>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-center">
-            <p className="text-3xl font-bold text-yellow-600">{data.expiring_soon}</p>
-            <p className="text-xs text-yellow-500 mt-1">Vencen en 3 días</p>
+
+          <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100">
+            <div className="flex items-center gap-1.5 mb-2">
+              <WarningCircle size={14} className="text-amber-500" />
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-600">Proximos</span>
+            </div>
+            <p className="text-4xl font-bold text-amber-700">{data.expiring_soon}</p>
+            <p className="text-xs text-amber-500 mt-1">vencen en 3 dias</p>
           </div>
         </div>
 
-        {/* Tip */}
-        {data.total_wasted > 0 && (
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
-            <p className="text-sm font-semibold text-green-700 mb-1">💡 Dato</p>
-            <p className="text-sm text-green-600">
-              En un mes, podrías desperdiciar hasta{" "}
-              <strong>S/ {(data.total_wasted * 4).toFixed(2)}</strong> si continúas
-              con este patrón. ¡Usa FreshTrack para evitarlo!
+        {data.total_wasted === 0 && data.total_products === 0 && (
+          <div className="bg-green-50 border border-green-100 rounded-2xl p-6 flex flex-col items-center text-center">
+            <Leaf size={32} className="text-green-500 mb-3" />
+            <p className="font-semibold text-green-800">Sin desperdicios aun</p>
+            <p className="text-sm text-green-600 mt-1">Escanea tu primer ticket para empezar a trackear</p>
+          </div>
+        )}
+
+        {data.total_wasted === 0 && data.total_products > 0 && (
+          <div className="bg-green-50 border border-green-100 rounded-2xl p-4">
+            <p className="text-sm font-semibold text-green-800 mb-1">Todo bajo control</p>
+            <p className="text-sm text-green-700">
+              Ningun desperdicio registrado. Sigue usando FreshTrack para mantener este ritmo.
             </p>
           </div>
         )}
-
-        {data.total_wasted === 0 && data.total_products === 0 && (
-          <div className="text-center py-10">
-            <p className="text-4xl mb-3">🌱</p>
-            <p className="text-slate-500 font-medium">Sin datos aún</p>
-            <p className="text-sm text-slate-400 mt-1">Escanea tu primer ticket para empezar</p>
-          </div>
-        )}
       </div>
+
       <BottomNav />
     </div>
   );

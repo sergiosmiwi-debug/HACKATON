@@ -3,6 +3,10 @@ import { useState, useRef } from "react";
 import { scanReceipt, scanFridge, addProduct } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
 import { useRouter } from "next/navigation";
+import {
+  Receipt, Snowflake, Camera, ArrowLeft,
+  CheckCircle, Circle, FloppyDisk, Spinner,
+} from "@phosphor-icons/react";
 
 type ScanMode = "receipt" | "fridge" | null;
 type DetectedItem = { name: string; price?: number; quantity?: string; category?: string };
@@ -68,40 +72,56 @@ export default function ScanPage() {
 
   if (done) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <p className="text-5xl">✅</p>
-        <p className="text-lg font-semibold text-slate-700">¡Guardado!</p>
-        <p className="text-sm text-slate-400">Redirigiendo...</p>
+      <div className="flex flex-col items-center justify-center min-h-[100dvh] gap-4">
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+          <CheckCircle size={36} weight="fill" className="text-green-600" />
+        </div>
+        <p className="text-lg font-bold text-slate-800">Guardado</p>
+        <p className="text-sm text-slate-400">Redirigiendo al inventario...</p>
       </div>
     );
   }
 
   return (
     <div className="pb-24">
-      <div className="bg-white px-5 pt-12 pb-5 border-b border-slate-100 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-800">📷 Escanear</h1>
-        <p className="text-sm text-slate-400 mt-1">Sube una foto de tu ticket o refri</p>
+      <div className="bg-white px-5 pt-12 pb-5 border-b border-slate-100">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 bg-green-700 rounded-xl flex items-center justify-center">
+            <Camera size={18} weight="fill" className="text-white" />
+          </div>
+          <div>
+            <h1 className="text-[17px] font-bold text-slate-900">Escanear</h1>
+            <p className="text-[11px] text-slate-400">Sube una foto de tu ticket o refri</p>
+          </div>
+        </div>
       </div>
 
       <div className="px-4 py-5 flex flex-col gap-4">
-        {/* Modo */}
         {!mode && (
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => setMode("receipt")}
-              className="flex flex-col items-center gap-3 p-6 bg-white rounded-2xl border-2 border-slate-200 hover:border-green-400 transition"
+              className="flex flex-col items-start gap-3 p-5 bg-white rounded-2xl border border-slate-200 hover:border-green-400 hover:bg-green-50 transition-colors active:scale-[0.98]"
             >
-              <span className="text-4xl">🧾</span>
-              <span className="font-semibold text-slate-700">Ticket de compra</span>
-              <span className="text-xs text-slate-400 text-center">Detecta productos y precios automáticamente</span>
+              <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center">
+                <Receipt size={20} className="text-slate-600" />
+              </div>
+              <div>
+                <p className="font-bold text-slate-800 text-sm">Ticket</p>
+                <p className="text-xs text-slate-400 mt-0.5 leading-snug">Detecta productos y precios automaticamente</p>
+              </div>
             </button>
             <button
               onClick={() => setMode("fridge")}
-              className="flex flex-col items-center gap-3 p-6 bg-white rounded-2xl border-2 border-slate-200 hover:border-green-400 transition"
+              className="flex flex-col items-start gap-3 p-5 bg-white rounded-2xl border border-slate-200 hover:border-green-400 hover:bg-green-50 transition-colors active:scale-[0.98]"
             >
-              <span className="text-4xl">🧊</span>
-              <span className="font-semibold text-slate-700">Foto del refri</span>
-              <span className="text-xs text-slate-400 text-center">Identifica lo que tienes guardado</span>
+              <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center">
+                <Snowflake size={20} className="text-slate-600" />
+              </div>
+              <div>
+                <p className="font-bold text-slate-800 text-sm">Refri</p>
+                <p className="text-xs text-slate-400 mt-0.5 leading-snug">Identifica lo que tienes guardado</p>
+              </div>
             </button>
           </div>
         )}
@@ -110,79 +130,113 @@ export default function ScanPage() {
           <>
             <button
               onClick={() => { setMode(null); setPreview(null); setFile(null); setDetected([]); }}
-              className="text-sm text-slate-400 flex items-center gap-1 -mb-1"
+              className="flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors -mb-1"
             >
-              ← Cambiar modo
+              <ArrowLeft size={15} />
+              Cambiar modo
             </button>
 
-            {/* Foto */}
             <div
               onClick={() => inputRef.current?.click()}
-              className="relative bg-white border-2 border-dashed border-slate-300 rounded-2xl h-52 flex items-center justify-center cursor-pointer overflow-hidden hover:border-green-400 transition"
+              className="relative bg-white border-2 border-dashed border-slate-200 rounded-2xl h-52 flex items-center justify-center cursor-pointer overflow-hidden hover:border-green-400 transition-colors"
             >
               {preview ? (
                 <img src={preview} alt="preview" className="w-full h-full object-cover" />
               ) : (
-                <div className="text-center">
-                  <p className="text-3xl mb-2">📸</p>
-                  <p className="text-sm text-slate-500">Toca para subir foto</p>
+                <div className="flex flex-col items-center gap-2 text-center px-6">
+                  <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center">
+                    <Camera size={22} className="text-slate-400" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-500">Toca para subir foto</p>
+                  <p className="text-xs text-slate-400">o tomar con la camara</p>
                 </div>
               )}
             </div>
-            <input ref={inputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleFile}
+            />
 
-            {/* Teléfono */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-4">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">WhatsApp (opcional)</label>
+            <div className="bg-white rounded-2xl border border-slate-200 px-4 py-3">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">WhatsApp (opcional)</label>
               <input
                 type="tel"
                 placeholder="+51 999 999 999"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full mt-2 text-sm outline-none text-slate-700 placeholder:text-slate-300"
+                className="w-full mt-1 text-sm text-slate-700 outline-none placeholder:text-slate-300"
               />
             </div>
 
-            {/* Escanear */}
             {file && detected.length === 0 && (
               <button
                 onClick={handleScan}
                 disabled={loading}
-                className="w-full bg-green-600 text-white font-semibold py-4 rounded-2xl hover:bg-green-700 disabled:opacity-50 transition"
+                className="w-full bg-green-700 text-white font-bold py-4 rounded-2xl hover:bg-green-800 disabled:opacity-60 transition-colors flex items-center justify-center gap-2 active:scale-[0.99]"
               >
-                {loading ? "Analizando con IA..." : "Analizar foto"}
+                {loading ? (
+                  <>
+                    <Spinner size={16} className="animate-spin" />
+                    Analizando con IA...
+                  </>
+                ) : (
+                  "Analizar foto"
+                )}
               </button>
             )}
 
-            {/* Resultados */}
             {detected.length > 0 && (
               <div className="flex flex-col gap-2">
-                <p className="text-sm font-semibold text-slate-600">Selecciona qué guardar:</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">
+                  {detected.length} productos detectados
+                </p>
                 {detected.map((item, i) => (
                   <button
                     key={i}
                     onClick={() => toggleSelect(i)}
-                    className={`flex items-center gap-3 p-3 rounded-xl border transition ${
-                      selected.has(i) ? "bg-green-50 border-green-300" : "bg-white border-slate-200 opacity-50"
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors ${
+                      selected.has(i)
+                        ? "bg-green-50 border-green-300"
+                        : "bg-white border-slate-200 opacity-50"
                     }`}
                   >
-                    <span className="text-lg">{selected.has(i) ? "✅" : "⬜"}</span>
-                    <span className="text-sm font-medium text-slate-700">{item.name}</span>
-                    {item.price && <span className="ml-auto text-sm text-slate-400">S/ {item.price}</span>}
+                    {selected.has(i)
+                      ? <CheckCircle size={18} weight="fill" className="text-green-600 shrink-0" />
+                      : <Circle size={18} className="text-slate-300 shrink-0" />
+                    }
+                    <span className="text-sm font-medium text-slate-700 text-left flex-1">{item.name}</span>
+                    {item.price != null && item.price > 0 && (
+                      <span className="text-xs text-slate-400 ml-auto shrink-0">S/ {item.price}</span>
+                    )}
                   </button>
                 ))}
                 <button
                   onClick={handleSave}
                   disabled={loading || selected.size === 0}
-                  className="w-full bg-green-600 text-white font-semibold py-4 rounded-2xl hover:bg-green-700 disabled:opacity-50 transition mt-2"
+                  className="w-full bg-green-700 text-white font-bold py-4 rounded-2xl hover:bg-green-800 disabled:opacity-60 transition-colors flex items-center justify-center gap-2 mt-1 active:scale-[0.99]"
                 >
-                  {loading ? "Guardando..." : `Guardar ${selected.size} producto${selected.size !== 1 ? "s" : ""}`}
+                  {loading ? (
+                    <>
+                      <Spinner size={16} className="animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <FloppyDisk size={16} />
+                      Guardar {selected.size} producto{selected.size !== 1 ? "s" : ""}
+                    </>
+                  )}
                 </button>
               </div>
             )}
           </>
         )}
       </div>
+
       <BottomNav />
     </div>
   );
