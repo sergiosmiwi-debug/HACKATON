@@ -38,6 +38,13 @@
   --muted-txt:  #4b5563;
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
+  /* Shadows — tinted to brand green hue */
+  --shadow-card: 0 1px 2px rgba(26,74,40,0.05), 0 4px 16px rgba(26,74,40,0.07);
+  --shadow-card-hover: 0 2px 4px rgba(26,74,40,0.08), 0 8px 24px rgba(26,74,40,0.10);
+  --shadow-nav:  0 8px 32px rgba(26,74,40,0.14), 0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(26,74,40,0.07);
+  --shadow-bar:  0 -1px 0 rgba(26,74,40,0.06);
+  --shadow-btn:  0 1px 2px rgba(26,74,40,0.10);
 }
 
 /* ─── Force light mode — defeats Tailwind v4 dark Canvas reset ── */

@@ -43,13 +43,13 @@ export default function DashboardPage() {
   useEffect(() => { getDashboard().then(setData); }, []);
 
   return (
-    <div className="pb-28">
+    <div style={{ paddingBottom: 100 }}>
       {/* Header */}
-      <div className="px-5 pt-12 pb-5" style={{ background: "var(--brand)" }}>
-        <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--brand-text)", letterSpacing: "-0.02em" }}>
-          FreshTrack
+      <div className="px-5 pt-12 pb-5" style={{ background: "linear-gradient(170deg, #1a4a28 0%, #153d22 100%)" }}>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em" }}>
+          Resumen
         </h1>
-        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>Resumen de tu refri</p>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 3, fontWeight: 500 }}>Estado de tu refri</p>
       </div>
 
       {!data ? (
@@ -59,10 +59,10 @@ export default function DashboardPage() {
           ))}
         </div>
       ) : (
-        <div style={{ padding: "16px 16px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ padding: "16px 14px 0", display: "flex", flexDirection: "column", gap: 10 }}>
 
           {/* Waste */}
-          <div style={{ background: "var(--surface)", border: "1px solid var(--border-lo)", borderRadius: 20, padding: 20 }}>
+          <div style={{ background: "var(--surface)", border: "1px solid var(--border-lo)", borderRadius: 20, padding: 20, boxShadow: "var(--shadow-card)" }}>
             <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)" }}>
               Dinero desperdiciado
             </p>
@@ -82,7 +82,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Estado del refri */}
-          <div style={{ background: "var(--surface)", border: "1px solid var(--border-lo)", borderRadius: 20, padding: 20 }}>
+          <div style={{ background: "var(--surface)", border: "1px solid var(--border-lo)", borderRadius: 20, padding: 20, boxShadow: "var(--shadow-card)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)" }}>
                 Estado del refri

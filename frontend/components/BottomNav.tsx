@@ -1,41 +1,69 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Snowflake, Camera, ChartBar } from "@phosphor-icons/react";
+import { Package, ScanLine, ChartBar } from "@phosphor-icons/react";
 
-const tabs = [
-  { href: "/",          label: "Inventario", Icon: Snowflake },
-  { href: "/scan",      label: "Escanear",   Icon: Camera    },
-  { href: "/dashboard", label: "Resumen",    Icon: ChartBar  },
+const LINKS = [
+  { href: "/",          label: "Inventario", Icon: Package  },
+  { href: "/scan",      label: "Escanear",   Icon: ScanLine },
+  { href: "/dashboard", label: "Resumen",    Icon: ChartBar },
 ];
 
 export default function BottomNav() {
   const path = usePathname();
+
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 max-w-md mx-auto flex"
       style={{
-        background: "var(--surface)",
-        borderTop: "1px solid var(--border-lo)",
+        position: "fixed",
+        bottom: 20,
+        left: 0,
+        right: 0,
+        display: "flex",
+        justifyContent: "center",
+        zIndex: 50,
+        pointerEvents: "none",
       }}
     >
-      {tabs.map(({ href, label, Icon }) => {
-        const active = path === href;
-        return (
-          <Link
-            key={href}
-            href={href}
-            className="flex-1 flex flex-col items-center pt-3 pb-6 gap-1"
-            style={{
-              color: active ? "var(--brand)" : "var(--ink-3)",
-              transition: "color 150ms ease",
-            }}
-          >
-            <Icon size={22} weight={active ? "fill" : "regular"} />
-            <span style={{ fontSize: 10, fontWeight: 600 }}>{label}</span>
-          </Link>
-        );
-      })}
+      <div
+        style={{
+          pointerEvents: "all",
+          display: "flex",
+          gap: 2,
+          background: "#ffffff",
+          borderRadius: 99,
+          padding: "6px 6px",
+          boxShadow: "var(--shadow-nav)",
+        }}
+      >
+        {LINKS.map(({ href, label, Icon }) => {
+          const active = href === "/" ? path === "/" : path.startsWith(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 3,
+                padding: "9px 22px",
+                borderRadius: 99,
+                background: active ? "var(--brand-bg)" : "transparent",
+                color: active ? "var(--brand)" : "var(--ink-3)",
+                textDecoration: "none",
+                transition: "background 180ms ease, color 180ms ease",
+                minWidth: 72,
+              }}
+            >
+              <Icon size={20} weight={active ? "fill" : "regular"} />
+              <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.01em" }}>
+                {label}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }

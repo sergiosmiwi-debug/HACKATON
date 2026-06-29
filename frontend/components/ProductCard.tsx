@@ -21,90 +21,99 @@ interface Props {
 }
 
 const S = {
-  fresh:   { color: "var(--fresh)",   bg: "var(--fresh-bg)",  txt: "var(--fresh-txt)",  label: "Fresco"  },
-  warning: { color: "var(--warn)",    bg: "var(--warn-bg)",   txt: "var(--warn-txt)",   label: "Pronto"  },
-  danger:  { color: "var(--danger)",  bg: "var(--danger-bg)", txt: "var(--danger-txt)", label: "Urgente" },
-  expired: { color: "var(--muted)",   bg: "var(--muted-bg)",  txt: "var(--muted-txt)",  label: "Vencido" },
+  fresh:   { color: "var(--fresh)",  bg: "var(--fresh-bg)",  txt: "var(--fresh-txt)",  label: "Fresco"  },
+  warning: { color: "var(--warn)",   bg: "var(--warn-bg)",   txt: "var(--warn-txt)",   label: "Pronto"  },
+  danger:  { color: "var(--danger)", bg: "var(--danger-bg)", txt: "var(--danger-txt)", label: "Urgente" },
+  expired: { color: "var(--muted)",  bg: "var(--muted-bg)",  txt: "var(--muted-txt)",  label: "Vencido" },
 } as const;
 
 export default function ProductCard({ product, onOpen, onDiscard, selectMode, selected, onSelect }: Props) {
   const s = S[product.status as keyof typeof S] ?? S.expired;
 
   const num =
-    product.days_left === null ? "–"   :
-    product.days_left <  0    ? "!"    :
-    product.days_left > 99    ? "99+"  :
+    product.days_left === null ? "–"  :
+    product.days_left <  0    ? "!"   :
+    product.days_left > 99    ? "99+" :
     String(product.days_left);
 
   const unit =
-    product.days_left === null ? ""        :
-    product.days_left <  0    ? "vencido"  :
-    product.days_left === 0   ? "hoy"      :
-    product.days_left === 1   ? "día"      :
+    product.days_left === null ? ""       :
+    product.days_left <  0    ? "vencido" :
+    product.days_left === 0   ? "hoy"     :
+    product.days_left === 1   ? "día"     :
     "días";
 
   return (
     <div
       onClick={() => selectMode && onSelect?.(product.id)}
-      className={`rounded-2xl overflow-hidden ${selectMode ? "cursor-pointer" : ""}`}
       style={{
         background: "var(--surface)",
-        border: selected ? "1.5px solid var(--brand)" : "1px solid var(--border-lo)",
-        boxShadow: selected ? "0 0 0 3px var(--brand-bg)" : "none",
+        border: selected
+          ? "1.5px solid var(--brand)"
+          : "1px solid var(--border-lo)",
+        borderRadius: 18,
+        overflow: "hidden",
+        boxShadow: selected
+          ? "0 0 0 3px var(--brand-bg), var(--shadow-card)"
+          : "var(--shadow-card)",
         transition: "box-shadow 150ms ease, border-color 150ms ease",
+        cursor: selectMode ? "pointer" : "default",
       }}
     >
-      <div style={{ padding: 16 }}>
-        {/* Main row */}
-        <div style={{ display: "flex", alignItems: "stretch", gap: 14 }}>
+      <div style={{ padding: "14px 16px" }}>
+        <div style={{ display: "flex", alignItems: "stretch", gap: 0 }}>
 
-          {/* Select checkbox / countdown column */}
           {selectMode ? (
-            <div style={{ display: "flex", alignItems: "center", paddingRight: 2 }}>
+            <div style={{ display: "flex", alignItems: "center", paddingRight: 14 }}>
               {selected
-                ? <CheckCircle size={20} weight="fill" style={{ color: "var(--brand)" }} />
-                : <Circle size={20} style={{ color: "var(--ink-3)" }} />
+                ? <CheckCircle size={22} weight="fill" style={{ color: "var(--brand)" }} />
+                : <Circle size={22} style={{ color: "var(--ink-3)" }} />
               }
             </div>
           ) : (
-            /* Countdown — the hero element */
+            /* Countdown — the visual anchor */
             <div style={{
-              minWidth: 52,
+              width: 60,
+              flexShrink: 0,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              paddingRight: 14,
+              paddingRight: 16,
+              marginRight: 16,
               borderRight: "1px solid var(--border-lo)",
             }}>
               <span style={{
-                fontSize: 32,
-                fontWeight: 800,
+                fontSize: 38,
+                fontWeight: 900,
                 lineHeight: 1,
                 color: s.color,
-                letterSpacing: "-0.03em",
+                letterSpacing: "-0.04em",
+                fontVariantNumeric: "tabular-nums",
               }}>
                 {num}
               </span>
               <span style={{
-                fontSize: 10,
-                fontWeight: 600,
+                fontSize: 9,
+                fontWeight: 700,
                 color: s.color,
-                marginTop: 2,
-                letterSpacing: "0.02em",
+                marginTop: 3,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                opacity: 0.85,
               }}>
-                {unit}
+                {unit || "días"}
               </span>
             </div>
           )}
 
           {/* Content */}
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center" }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
               <p style={{
                 fontWeight: 700,
                 fontSize: 15,
-                lineHeight: 1.2,
+                lineHeight: 1.25,
                 color: "var(--ink-1)",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -120,13 +129,17 @@ export default function ProductCard({ product, onOpen, onDiscard, selectMode, se
                 color: s.txt,
                 background: s.bg,
                 borderRadius: 99,
-                padding: "2px 8px",
+                padding: "3px 9px",
+                letterSpacing: "0.02em",
               }}>
                 {s.label}
               </span>
             </div>
-            <p style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>
+            <p style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 5, lineHeight: 1 }}>
               {product.quantity} · {product.category}
+              {product.purchase_price > 0 && (
+                <span style={{ color: "var(--ink-3)" }}> · S/ {product.purchase_price.toFixed(2)}</span>
+              )}
             </p>
           </div>
         </div>
@@ -143,34 +156,39 @@ export default function ProductCard({ product, onOpen, onDiscard, selectMode, se
           }}>
             <button
               onClick={(e) => { e.stopPropagation(); onOpen(product.id); }}
-              className="active:scale-[0.94]"
               style={{
-                display: "flex", alignItems: "center", gap: 4,
+                display: "flex", alignItems: "center", gap: 5,
                 fontSize: 12, fontWeight: 600,
                 color: "var(--ink-2)",
                 background: "var(--surface-hi)",
                 border: "1px solid var(--border-lo)",
-                borderRadius: 10, padding: "5px 10px",
-                transition: "transform 80ms ease",
+                borderRadius: 10, padding: "6px 12px",
+                boxShadow: "var(--shadow-btn)",
                 cursor: "pointer",
+                transition: "transform 80ms ease",
               }}
+              onMouseDown={e => (e.currentTarget.style.transform = "scale(0.95)")}
+              onMouseUp={e => (e.currentTarget.style.transform = "scale(1)")}
+              onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
             >
               <ArrowBendUpRight size={11} />
               Abrir
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onDiscard(product.id); }}
-              className="active:scale-[0.94]"
               style={{
-                display: "flex", alignItems: "center", gap: 4,
+                display: "flex", alignItems: "center", gap: 5,
                 fontSize: 12, fontWeight: 600,
                 color: "var(--danger-txt)",
                 background: "var(--danger-bg)",
                 border: "1px solid transparent",
-                borderRadius: 10, padding: "5px 10px",
-                transition: "transform 80ms ease",
+                borderRadius: 10, padding: "6px 12px",
                 cursor: "pointer",
+                transition: "transform 80ms ease",
               }}
+              onMouseDown={e => (e.currentTarget.style.transform = "scale(0.95)")}
+              onMouseUp={e => (e.currentTarget.style.transform = "scale(1)")}
+              onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
             >
               <Trash size={11} />
               Tirar
