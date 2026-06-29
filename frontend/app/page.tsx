@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { getProducts, markOpened, discardProduct } from "@/lib/api";
 import ProductCard from "@/components/ProductCard";
 import BottomNav from "@/components/BottomNav";
-import { Snowflake, Warning, ArrowClockwise, CheckSquare, X, Trash, ArrowSquareOut } from "@phosphor-icons/react";
+import { ArrowClockwise, CheckSquare, X, Trash } from "@phosphor-icons/react";
 
 type Product = {
   id: number;
@@ -17,37 +17,50 @@ type Product = {
 };
 
 const FILTERS = [
-  { key: "all",     label: "Todos" },
+  { key: "all",     label: "Todos"   },
   { key: "danger",  label: "Urgente" },
-  { key: "warning", label: "Pronto" },
+  { key: "warning", label: "Pronto"  },
   { key: "fresh",   label: "Frescos" },
-  { key: "expired", label: "Vencidos" },
+  { key: "expired", label: "Vencidos"},
 ];
 
-const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
+const EASE = "cubic-bezier(0.23, 1, 0.32, 1)";
 
-function removeWithAnimation(
-  id: number | number[],
+function animateOut(
+  ids: number[],
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>,
-  onRemoved?: () => void
+  after?: () => void
 ) {
-  const ids = Array.isArray(id) ? id : [id];
-  setProducts((prev) =>
-    prev.map((p) => (ids.includes(p.id) ? { ...p, removing: true } : p))
-  );
+  setProducts((p) => p.map((x) => (ids.includes(x.id) ? { ...x, removing: true } : x)));
   setTimeout(() => {
-    setProducts((prev) => prev.filter((p) => !ids.includes(p.id)));
-    onRemoved?.();
+    setProducts((p) => p.filter((x) => !ids.includes(x.id)));
+    after?.();
   }, 370);
 }
 
+/* ─── Skeleton loader ─────────────────────────── */
+function CardSkeleton({ delay }: { delay: number }) {
+  return (
+    <div
+      className="rounded-2xl anim-card"
+      style={{
+        height: 96,
+        background: "var(--surface)",
+        border: "1px solid var(--border-lo)",
+        animationDelay: `${delay}ms`,
+        opacity: 0.6,
+      }}
+    />
+  );
+}
+
 export default function Home() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
-  const [selectMode, setSelectMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [loadKey, setLoadKey] = useState(0);
+  const [products, setProducts]   = useState<Product[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [filter, setFilter]       = useState("all");
+  const [selectMode, setSelect]   = useState(false);
+  const [selected, setSelected]   = useState<Set<number>>(new Set());
+  const [loadKey, setLoadKey]     = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -58,17 +71,17 @@ export default function Home() {
 
   useEffect(() => { load(); }, [load, loadKey]);
 
-  function toggleSelect(id: number) {
-    setSelectedIds((prev) => {
+  function toggleId(id: number) {
+    setSelected((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
   }
 
-  function exitSelectMode() {
-    setSelectMode(false);
-    setSelectedIds(new Set());
+  function exitSelect() {
+    setSelect(false);
+    setSelected(new Set());
   }
 
   async function handleOpen(id: number) {
@@ -76,171 +89,193 @@ export default function Home() {
     setLoadKey((k) => k + 1);
   }
 
-  async function handleDiscard(id: number) {
+  function handleDiscard(id: number) {
     discardProduct(id);
-    removeWithAnimation(id, setProducts);
+    animateOut([id], setProducts);
   }
 
-  async function handleDiscardSelected() {
-    const ids = [...selectedIds];
-    for (const id of ids) discardProduct(id);
-    removeWithAnimation(ids, setProducts, exitSelectMode);
+  function handleDiscardSelected() {
+    const ids = [...selected];
+    ids.forEach((id) => discardProduct(id));
+    animateOut(ids, setProducts, exitSelect);
   }
 
-  async function handleClearAll() {
+  function handleClearAll() {
     const ids = products.map((p) => p.id);
-    for (const id of ids) discardProduct(id);
-    removeWithAnimation(ids, setProducts);
+    ids.forEach((id) => discardProduct(id));
+    animateOut(ids, setProducts);
   }
 
-  const filtered = filter === "all"
-    ? products
-    : products.filter((p) => p.status === filter);
-
-  const urgentCount = products.filter(
-    (p) => (p.status === "danger" || p.status === "expired") && !p.removing
-  ).length;
-
-  const visibleCount = products.filter((p) => !p.removing).length;
+  const visible = products.filter((p) => !p.removing);
+  const filtered = filter === "all" ? visible : visible.filter((p) => p.status === filter);
+  const urgentCount = visible.filter((p) => p.status === "danger" || p.status === "expired").length;
 
   return (
-    <div className="pb-24">
-      {/* Header */}
-      <div className="bg-white sticky top-0 z-10 border-b border-slate-100">
-        <div className="px-5 pt-12 pb-4">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 bg-green-700 rounded-xl flex items-center justify-center">
-                <Snowflake size={18} weight="fill" className="text-white" />
-              </div>
-              <div>
-                <h1 className="text-[17px] font-bold text-slate-900 leading-tight">FreshTrack</h1>
-                <p className="text-[11px] text-slate-400 leading-tight">{visibleCount} productos en tu refri</p>
-              </div>
-            </div>
-
+    <div className="pb-28">
+      {/* ── Header ── */}
+      <div
+        className="sticky top-0 z-10 px-5 pt-12 pb-4"
+        style={{ background: "var(--bg)", borderBottom: "1px solid var(--border-lo)" }}
+      >
+        <div className="flex items-center justify-between">
+          <div>
             <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full inline-block" style={{ background: "var(--brand)" }} />
+              <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--ink-1)" }}>
+                FreshTrack
+              </h1>
               {urgentCount > 0 && !selectMode && (
-                <div className="flex items-center gap-1 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">
-                  <Warning size={12} weight="fill" className="text-red-500" />
-                  <span className="text-xs font-bold text-red-600">{urgentCount}</span>
-                </div>
-              )}
-
-              {!selectMode ? (
-                <>
-                  {visibleCount > 0 && (
-                    <button
-                      onClick={() => setSelectMode(true)}
-                      className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200 active:scale-[0.96] px-2.5 py-1.5 rounded-xl transition-all duration-100"
-                    >
-                      <CheckSquare size={13} />
-                      Seleccionar
-                    </button>
-                  )}
-                  <button
-                    onClick={load}
-                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-[0.96] transition-all duration-100"
-                  >
-                    <ArrowClockwise size={15} className="text-slate-500" />
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={exitSelectMode}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200 active:scale-[0.96] px-2.5 py-1.5 rounded-xl transition-all duration-100"
+                <span
+                  className="text-[10px] font-bold rounded-full px-2 py-0.5"
+                  style={{ color: "var(--danger-text)", background: "var(--danger-bg)" }}
                 >
-                  <X size={13} />
-                  Cancelar
-                </button>
+                  {urgentCount} urgente{urgentCount !== 1 ? "s" : ""}
+                </span>
               )}
             </div>
+            <p className="text-sm mt-0.5" style={{ color: "var(--ink-3)" }}>
+              {visible.length} {visible.length === 1 ? "producto" : "productos"}
+            </p>
           </div>
 
-          {/* Filtros */}
-          {!selectMode && (
-            <div className="flex gap-1.5 mt-4 overflow-x-auto pb-1 scrollbar-none">
-              {FILTERS.map((f) => (
+          <div className="flex items-center gap-2">
+            {!selectMode ? (
+              <>
+                {visible.length > 0 && (
+                  <button
+                    onClick={() => setSelect(true)}
+                    className="flex items-center gap-1.5 text-xs font-semibold rounded-xl active:scale-[0.95]"
+                    style={{
+                      color: "var(--ink-2)",
+                      background: "var(--surface)",
+                      border: "1px solid var(--border-lo)",
+                      padding: "6px 10px",
+                      transition: "transform 80ms ease",
+                    }}
+                  >
+                    <CheckSquare size={13} />
+                    Seleccionar
+                  </button>
+                )}
                 <button
-                  key={f.key}
-                  onClick={() => setFilter(f.key)}
-                  className={`shrink-0 text-[11px] font-semibold px-3 py-1.5 rounded-full transition-colors duration-150 ${
-                    filter === f.key
-                      ? "bg-green-700 text-white"
-                      : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                  }`}
+                  onClick={load}
+                  className="flex items-center justify-center rounded-xl active:scale-[0.95]"
+                  style={{
+                    width: 34, height: 34,
+                    color: "var(--ink-2)",
+                    background: "var(--surface)",
+                    border: "1px solid var(--border-lo)",
+                    transition: "transform 80ms ease",
+                  }}
                 >
-                  {f.label}
+                  <ArrowClockwise size={15} />
                 </button>
-              ))}
-            </div>
-          )}
-
-          {/* Select mode: select all / deselect all */}
-          {selectMode && (
-            <div className="flex items-center justify-between mt-3">
-              <span className="text-xs text-slate-500 font-medium">
-                {selectedIds.size} seleccionado{selectedIds.size !== 1 ? "s" : ""}
-              </span>
+              </>
+            ) : (
               <button
-                onClick={() => {
-                  if (selectedIds.size === filtered.length) {
-                    setSelectedIds(new Set());
-                  } else {
-                    setSelectedIds(new Set(filtered.map((p) => p.id)));
-                  }
+                onClick={exitSelect}
+                className="flex items-center gap-1.5 text-xs font-semibold rounded-xl active:scale-[0.95]"
+                style={{
+                  color: "var(--ink-2)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border-lo)",
+                  padding: "6px 10px",
+                  transition: "transform 80ms ease",
                 }}
-                className="text-xs font-semibold text-green-700 hover:text-green-800 transition-colors"
               >
-                {selectedIds.size === filtered.length ? "Deseleccionar todo" : "Seleccionar todo"}
+                <X size={13} />
+                Cancelar
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
+
+        {/* Filters / Select-all row */}
+        {!selectMode ? (
+          <div className="flex gap-1.5 mt-4 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none" }}>
+            {FILTERS.map(({ key, label }) => {
+              const active = filter === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setFilter(key)}
+                  className="shrink-0 text-xs font-semibold rounded-full"
+                  style={{
+                    padding: "5px 12px",
+                    color: active ? "var(--bg)" : "var(--ink-3)",
+                    background: active ? "var(--brand)" : "var(--surface)",
+                    border: active ? "1px solid transparent" : "1px solid var(--border-lo)",
+                    transition: "background 150ms ease, color 150ms ease",
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex items-center justify-between mt-3">
+            <span className="text-xs" style={{ color: "var(--ink-3)" }}>
+              {selected.size} seleccionado{selected.size !== 1 ? "s" : ""}
+            </span>
+            <button
+              onClick={() => {
+                const all = new Set(filtered.map((p) => p.id));
+                setSelected(selected.size === filtered.length ? new Set() : all);
+              }}
+              className="text-xs font-semibold"
+              style={{ color: "var(--brand)" }}
+            >
+              {selected.size === filtered.length ? "Deseleccionar todo" : "Seleccionar todo"}
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Lista */}
-      <div className="px-4 py-4 flex flex-col gap-0">
+      {/* ── List ── */}
+      <div className="px-4 py-4 flex flex-col" style={{ gap: 0 }}>
         {loading ? (
           <div className="flex flex-col gap-2.5">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl h-24 animate-pulse border border-slate-100" />
-            ))}
+            {[0, 1, 2].map((i) => <CardSkeleton key={i} delay={i * 60} />)}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mb-4">
-              <Snowflake size={28} className="text-green-400" />
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+              style={{ background: "var(--surface)" }}
+            >
+              <span style={{ fontSize: 24 }}>🧊</span>
             </div>
-            <p className="font-semibold text-slate-700">Nada por aqui</p>
-            <p className="text-sm text-slate-400 mt-1">Escanea un ticket o foto de tu refri</p>
+            <p className="font-semibold" style={{ color: "var(--ink-1)" }}>Nada por aquí</p>
+            <p className="text-sm mt-1" style={{ color: "var(--ink-3)" }}>
+              Escanea un ticket o foto de tu refri
+            </p>
           </div>
         ) : (
           filtered.map((p, i) => (
-            /* Wrapper con grid-trick para colapso suave al eliminar */
             <div
               key={p.id}
               style={{
                 display: "grid",
                 gridTemplateRows: p.removing ? "0fr" : "1fr",
-                transition: `grid-template-rows 350ms ${EASE_OUT}, opacity 280ms ${EASE_OUT}, transform 280ms ${EASE_OUT}`,
                 opacity: p.removing ? 0 : 1,
-                transform: p.removing ? "translateX(20px)" : "translateX(0)",
-                marginBottom: p.removing ? 0 : "10px",
+                transform: p.removing ? "translateX(16px)" : "translateX(0)",
+                marginBottom: p.removing ? 0 : 10,
+                transition: `grid-template-rows 340ms ${EASE}, opacity 260ms ${EASE}, transform 260ms ${EASE}, margin-bottom 340ms ${EASE}`,
               }}
             >
               <div style={{ overflow: "hidden" }}>
                 <div
-                  className="card-enter"
-                  style={{ animationDelay: `${Math.min(i * 45, 250)}ms` }}
+                  className="anim-card"
+                  style={{ animationDelay: `${Math.min(i * 50, 200)}ms` }}
                 >
                   <ProductCard
                     product={p}
                     onOpen={handleOpen}
                     onDiscard={handleDiscard}
                     selectMode={selectMode}
-                    selected={selectedIds.has(p.id)}
-                    onSelect={toggleSelect}
+                    selected={selected.has(p.id)}
+                    onSelect={toggleId}
                   />
                 </div>
               </div>
@@ -249,19 +284,30 @@ export default function Home() {
         )}
       </div>
 
-      {/* Barra de accion flotante en select mode */}
+      {/* ── Select mode action bar ── */}
       {selectMode && (
         <div
-          className="fixed bottom-20 left-0 right-0 max-w-md mx-auto px-4 z-20"
-          style={{
-            animation: `fadeSlideUp 220ms ${EASE_OUT} both`,
-          }}
+          className="fixed left-0 right-0 max-w-md mx-auto px-4 anim-bar"
+          style={{ bottom: 72, zIndex: 20 }}
         >
-          <div className="bg-slate-900 rounded-2xl p-3 flex gap-2 shadow-xl">
-            {visibleCount > 0 && (
+          <div
+            className="flex gap-2 rounded-2xl p-3"
+            style={{
+              background: "var(--surface-hi)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            {visible.length > 0 && (
               <button
                 onClick={handleClearAll}
-                className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 active:scale-[0.97] px-3 py-2.5 rounded-xl transition-all duration-100"
+                className="flex items-center gap-1.5 text-xs font-semibold rounded-xl active:scale-[0.96]"
+                style={{
+                  color: "var(--ink-2)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border-lo)",
+                  padding: "9px 14px",
+                  transition: "transform 80ms ease",
+                }}
               >
                 <Trash size={13} />
                 Limpiar todo
@@ -269,11 +315,21 @@ export default function Home() {
             )}
             <button
               onClick={handleDiscardSelected}
-              disabled={selectedIds.size === 0}
-              className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-red-500 hover:bg-red-600 active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none px-3 py-2.5 rounded-xl transition-all duration-100"
+              disabled={selected.size === 0}
+              className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold rounded-xl active:scale-[0.96]"
+              style={{
+                color: selected.size === 0 ? "var(--muted-text)" : "var(--danger-text)",
+                background: selected.size === 0 ? "var(--muted-bg)" : "var(--danger-bg)",
+                border: `1px solid ${selected.size === 0 ? "transparent" : "var(--danger-bg)"}`,
+                padding: "9px 14px",
+                transition: "transform 80ms ease, background 150ms ease",
+                pointerEvents: selected.size === 0 ? "none" : "auto",
+              }}
             >
               <Trash size={13} />
-              Tirar {selectedIds.size > 0 ? `${selectedIds.size} seleccionado${selectedIds.size !== 1 ? "s" : ""}` : "seleccionados"}
+              Tirar {selected.size > 0
+                ? `${selected.size} seleccionado${selected.size !== 1 ? "s" : ""}`
+                : "seleccionados"}
             </button>
           </div>
         </div>
