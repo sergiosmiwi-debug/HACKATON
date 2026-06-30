@@ -29,6 +29,7 @@ class Product(Base):
     status = Column(String, default=ProductStatus.fresh)
     phone_number = Column(String, nullable=True)
     notified = Column(Integer, default=0)
+    device_id = Column(String, nullable=True, default=None)
 
 class WasteLog(Base):
     __tablename__ = "waste_logs"
@@ -37,6 +38,7 @@ class WasteLog(Base):
     price = Column(Float)
     discarded_at = Column(DateTime, default=datetime.utcnow)
     phone_number = Column(String, nullable=True)
+    device_id = Column(String, nullable=True, default=None)
 
 def get_db():
     db = SessionLocal()

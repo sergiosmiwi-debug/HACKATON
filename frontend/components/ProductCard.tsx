@@ -23,36 +23,19 @@ const S = {
   expired: { color: "var(--muted)",  bg: "var(--muted-bg)",  txt: "var(--muted-txt)",  label: "Vencido" },
 } as const;
 
-const BIN_COLORS: { keywords: string[]; bin: string; color: string; bg: string }[] = [
-  { keywords: ["leche","yogur","jugo","tetra","caja"],  bin: "Tetra Pak",  color: "#b8860b", bg: "#fff8cc" },
-  { keywords: ["botella","gaseosa","agua","plástico"],   bin: "Plástico",   color: "#1a6bb5", bg: "#ddeeff" },
-  { keywords: ["lata","atún","sardina","conserva"],      bin: "Metal",      color: "#6b7280", bg: "#f0f0f0" },
-  { keywords: ["vidrio","frasco","mermelada"],           bin: "Vidrio",     color: "#1c7a4a", bg: "#d4f0e0" },
-  { keywords: ["pan","fruta","verdura","carne","restos"],bin: "Orgánico",   color: "#7c4f1c", bg: "#efe0c8" },
-  { keywords: ["cartón","cereal","papel"],               bin: "Cartón",     color: "#1a6bb5", bg: "#ddeeff" },
+const BIN_INFO: { keywords: string[]; bin: string; color: string; tip: string }[] = [
+  { keywords: ["leche","yogur","jugo","tetra","caja"],    bin: "Tetra Pak", color: "#b8860b", tip: "♻️ Tetra Pak → bolsa amarilla" },
+  { keywords: ["botella","gaseosa","agua","plástico"],     bin: "Plástico",  color: "#1a6bb5", tip: "🔵 Plástico PET → tacho azul"  },
+  { keywords: ["lata","atún","sardina","conserva"],        bin: "Metal",     color: "#6b7280", tip: "⚪ Metal/Lata → tacho gris"    },
+  { keywords: ["vidrio","frasco","mermelada"],             bin: "Vidrio",    color: "#1c7a4a", tip: "🟢 Vidrio → tacho verde"       },
+  { keywords: ["pan","fruta","verdura","carne","resto"],   bin: "Orgánico",  color: "#7c4f1c", tip: "🟤 Orgánico → tacho marrón"   },
+  { keywords: ["cartón","cereal","papel"],                 bin: "Cartón",    color: "#1a6bb5", tip: "📦 Cartón → tacho azul"        },
 ];
 
-function getBinColor(name: string) {
+function getBin(name: string) {
   const lower = name.toLowerCase();
-  for (const rule of BIN_COLORS) {
+  for (const rule of BIN_INFO) {
     if (rule.keywords.some(k => lower.includes(k))) return rule;
-  }
-  return null;
-}
-
-const RECYCLE_MAP: { keywords: string[]; bin: string }[] = [
-  { keywords: ["leche","yogur","jugo","tetra","caja"],   bin: "♻️ Tetra Pak → bolsa amarilla" },
-  { keywords: ["botella","gaseosa","agua","plástico"],    bin: "🔵 Plástico PET → tacho azul"  },
-  { keywords: ["lata","atún","sardina","conserva"],       bin: "⚪ Metal/Lata → tacho gris"    },
-  { keywords: ["vidrio","frasco","mermelada"],            bin: "🟢 Vidrio → tacho verde"       },
-  { keywords: ["pan","fruta","verdura","carne","resto"],  bin: "🟤 Orgánico → tacho marrón"   },
-  { keywords: ["cartón","cereal","papel"],                bin: "📦 Cartón → tacho azul"        },
-];
-
-function getRecycleTip(name: string): string | null {
-  const lower = name.toLowerCase();
-  for (const rule of RECYCLE_MAP) {
-    if (rule.keywords.some(k => lower.includes(k))) return rule.bin;
   }
   return null;
 }
@@ -60,15 +43,14 @@ function getRecycleTip(name: string): string | null {
 export default function ProductCard({ product, onOpen, onDiscard, selectMode, selected, onSelect }: Props) {
   const s = S[product.status as keyof typeof S] ?? S.expired;
   const [recycleTip, setRecycleTip] = useState<string | null>(null);
-  const bin = getBinColor(product.name);
+  const bin = getBin(product.name);
 
   const num  = product.days_left === null ? "–" : product.days_left < 0 ? "!" : product.days_left > 99 ? "99+" : String(product.days_left);
   const unit = product.days_left === null ? "" : product.days_left < 0 ? "vencido" : product.days_left === 0 ? "hoy" : product.days_left === 1 ? "día" : "días";
 
   function handleDiscard() {
-    const tip = getRecycleTip(product.name);
-    if (tip) {
-      setRecycleTip(tip);
+    if (bin) {
+      setRecycleTip(bin.tip);
       setTimeout(() => { onDiscard(product.id); }, 1800);
     } else {
       onDiscard(product.id);
@@ -89,6 +71,15 @@ export default function ProductCard({ product, onOpen, onDiscard, selectMode, se
         position: "relative",
       }}
     >
+      {bin && (
+        <div title={`Va a: ${bin.bin}`} style={{
+          position: "absolute", top: 0, right: 0, width: 38, height: 38, zIndex: 1,
+          background: bin.color,
+          clipPath: "polygon(100% 0, 100% 100%, 0 0)",
+          opacity: 0.92,
+        }} />
+      )}
+
       {recycleTip && (
         <div style={{ position: "absolute", inset: 0, background: "#1a1714", borderRadius: 20, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px", gap: 10 }}>
           <span style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "#fff", flex: 1 }}>{recycleTip}</span>

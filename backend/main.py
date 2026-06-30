@@ -1,7 +1,7 @@
-from fastapi import FastAPI, UploadFile, File, Depends, HTTPException
+from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Header, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timedelta
 from pydantic import BaseModel
 from typing import Optional
 import os
@@ -14,7 +14,7 @@ from expiry import calculate_expiry, get_status
 from gemini_service import init_gemini, scan_receipt, scan_fridge
 from whatsapp_service import send_whatsapp, format_expiry_message
 
-app = FastAPI(title="FreshTrack API")
+app = FastAPI(title="QuipuRecicla API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,14 +28,20 @@ def startup():
     init_db()
     init_gemini()
 
-# --- Scan endpoints ---
+def get_device(x_device_id: Optional[str] = Header(default=None)) -> Optional[str]:
+    return x_device_id
+
+# --- Scan ---
 
 @app.post("/scan/receipt")
 async def scan_receipt_endpoint(
     file: UploadFile = File(...),
     phone: Optional[str] = None,
-    db: Session = Depends(get_db)
+    device_id: Optional[str] = None,
+    db: Session = Depends(get_db),
+    did: Optional[str] = Depends(get_device),
 ):
+    effective_device = device_id or did
     image_bytes = await file.read()
     items = scan_receipt(image_bytes)
     created = []
@@ -50,6 +56,7 @@ async def scan_receipt_endpoint(
             expiry_date=expiry_date,
             status=get_status(expiry_date),
             phone_number=phone,
+            device_id=effective_device,
         )
         db.add(product)
         created.append(item["name"])
@@ -60,8 +67,11 @@ async def scan_receipt_endpoint(
 async def scan_fridge_endpoint(
     file: UploadFile = File(...),
     phone: Optional[str] = None,
-    db: Session = Depends(get_db)
+    device_id: Optional[str] = None,
+    db: Session = Depends(get_db),
+    did: Optional[str] = Depends(get_device),
 ):
+    effective_device = device_id or did
     image_bytes = await file.read()
     items = scan_fridge(image_bytes)
     created = []
@@ -76,17 +86,21 @@ async def scan_fridge_endpoint(
             expiry_date=expiry_date,
             status=get_status(expiry_date),
             phone_number=phone,
+            device_id=effective_device,
         )
         db.add(product)
         created.append(item["name"])
     db.commit()
     return {"detected": created, "count": len(created)}
 
-# --- Products endpoints ---
+# --- Products ---
 
 @app.get("/products")
-def get_products(db: Session = Depends(get_db)):
-    products = db.query(Product).filter(Product.status != "discarded").all()
+def get_products(db: Session = Depends(get_db), did: Optional[str] = Depends(get_device)):
+    q = db.query(Product).filter(Product.status != "discarded")
+    if did:
+        q = q.filter(Product.device_id == did)
+    products = q.all()
     result = []
     for p in products:
         days_left = None
@@ -94,14 +108,11 @@ def get_products(db: Session = Depends(get_db)):
             days_left = (p.expiry_date - datetime.utcnow()).days
             p.status = get_status(p.expiry_date)
         result.append({
-            "id": p.id,
-            "name": p.name,
-            "category": p.category,
+            "id": p.id, "name": p.name, "category": p.category,
             "quantity": p.quantity,
             "purchase_date": p.purchase_date.isoformat() if p.purchase_date else None,
             "expiry_date": p.expiry_date.isoformat() if p.expiry_date else None,
-            "days_left": days_left,
-            "status": p.status,
+            "days_left": days_left, "status": p.status,
             "purchase_price": p.purchase_price,
         })
     db.commit()
@@ -119,7 +130,7 @@ def mark_opened(product_id: int, db: Session = Depends(get_db)):
     return {"message": f"{product.name} marcado como abierto", "new_expiry": product.expiry_date.isoformat()}
 
 @app.delete("/products/{product_id}")
-def discard_product(product_id: int, db: Session = Depends(get_db)):
+def discard_product(product_id: int, db: Session = Depends(get_db), did: Optional[str] = Depends(get_device)):
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
@@ -127,6 +138,7 @@ def discard_product(product_id: int, db: Session = Depends(get_db)):
         product_name=product.name,
         price=product.purchase_price,
         phone_number=product.phone_number,
+        device_id=did or product.device_id,
     )
     db.add(waste)
     product.status = "discarded"
@@ -138,9 +150,10 @@ class ProductCreate(BaseModel):
     quantity: str = "1"
     purchase_price: float = 0.0
     phone: Optional[str] = None
+    device_id: Optional[str] = None
 
 @app.post("/products")
-def create_product(data: ProductCreate, db: Session = Depends(get_db)):
+def create_product(data: ProductCreate, db: Session = Depends(get_db), did: Optional[str] = Depends(get_device)):
     purchase_date = datetime.utcnow()
     expiry_date = calculate_expiry(data.name, purchase_date)
     product = Product(
@@ -151,6 +164,7 @@ def create_product(data: ProductCreate, db: Session = Depends(get_db)):
         expiry_date=expiry_date,
         status=get_status(expiry_date),
         phone_number=data.phone,
+        device_id=data.device_id or did,
     )
     db.add(product)
     db.commit()
@@ -160,25 +174,74 @@ def create_product(data: ProductCreate, db: Session = Depends(get_db)):
 # --- Dashboard ---
 
 @app.get("/dashboard")
-def get_dashboard(db: Session = Depends(get_db)):
-    waste_logs = db.query(WasteLog).all()
+def get_dashboard(
+    db: Session = Depends(get_db),
+    did: Optional[str] = Depends(get_device),
+    period: str = Query(default="week", description="today|week|month|all"),
+):
+    # Rango de fechas según período
+    now = datetime.utcnow()
+    if period == "today":
+        since = now - timedelta(days=1)
+    elif period == "week":
+        since = now - timedelta(days=7)
+    elif period == "month":
+        since = now - timedelta(days=30)
+    else:
+        since = None  # "all"
+
+    wq = db.query(WasteLog)
+    if did:
+        wq = wq.filter(WasteLog.device_id == did)
+    if since:
+        wq = wq.filter(WasteLog.discarded_at >= since)
+    waste_logs = wq.all()
     total_wasted = sum(w.price for w in waste_logs)
-    products = db.query(Product).filter(Product.status != "discarded").all()
-    expiring_soon = [p for p in products if p.expiry_date and (p.expiry_date - datetime.utcnow()).days <= 3]
+
+    pq = db.query(Product).filter(Product.status != "discarded")
+    if did:
+        pq = pq.filter(Product.device_id == did)
+    products = pq.all()
+    expiring_soon = [p for p in products if p.expiry_date and (p.expiry_date - now).days <= 3]
+
     from collections import Counter
     status_counts = Counter(p.status for p in products)
+    waste_items = sorted(
+        [{"id": w.id, "name": w.product_name, "price": w.price, "discarded_at": w.discarded_at.isoformat()} for w in waste_logs],
+        key=lambda x: x["discarded_at"], reverse=True,
+    )
     return {
-        "total_wasted":  round(total_wasted, 2),
-        "waste_count":   len(waste_logs),
-        "expiring_soon": len(expiring_soon),
+        "total_wasted":   round(total_wasted, 2),
+        "waste_count":    len(waste_logs),
+        "expiring_soon":  len(expiring_soon),
         "total_products": len(products),
-        "fresh_count":   status_counts.get("fresh", 0),
-        "warning_count": status_counts.get("warning", 0),
-        "danger_count":  status_counts.get("danger", 0),
-        "expired_count": status_counts.get("expired", 0),
+        "fresh_count":    status_counts.get("fresh", 0),
+        "warning_count":  status_counts.get("warning", 0),
+        "danger_count":   status_counts.get("danger", 0),
+        "expired_count":  status_counts.get("expired", 0),
+        "period":         period,
+        "waste_items":    waste_items,
     }
 
-# --- Notifications (manual trigger para demo) ---
+@app.delete("/dashboard/waste/{waste_id}")
+def remove_waste_entry(waste_id: int, db: Session = Depends(get_db)):
+    waste = db.query(WasteLog).filter(WasteLog.id == waste_id).first()
+    if not waste:
+        raise HTTPException(status_code=404, detail="Registro no encontrado")
+    db.delete(waste)
+    db.commit()
+    return {"message": "Registro eliminado del cuadre"}
+
+@app.delete("/dashboard/reset")
+def reset_waste(db: Session = Depends(get_db), did: Optional[str] = Depends(get_device)):
+    q = db.query(WasteLog)
+    if did:
+        q = q.filter(WasteLog.device_id == did)
+    q.delete()
+    db.commit()
+    return {"message": "Contador reiniciado"}
+
+# --- Notificaciones ---
 
 @app.post("/notify/check")
 def check_and_notify(db: Session = Depends(get_db)):

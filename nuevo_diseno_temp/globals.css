@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap");
+
+:root {
+  /* Paleta principal */
+  --color-bg: #f5f2eb;
+  --color-surface: #ffffff;
+  --color-border: #e0d9cc;
+  --color-border-soft: #e8e2d8;
+
+  /* Verdes */
+  --color-forest: #1c3d2a;
+  --color-forest-mid: #1c7a4a;
+  --color-forest-light: #e4f4ec;
+
+  /* Violeta */
+  --color-violet: #7c3fbf;
+  --color-violet-dark: #5b2a90;
+  --color-violet-light: #9b5fd4;
+  --color-violet-bg: #f0eaff;
+
+  /* Ámbar */
+  --color-amber: #c97a1a;
+  --color-amber-dark: #9a5a0e;
+  --color-amber-light: #e8951f;
+  --color-amber-bg: #fdf0e0;
+
+  /* Header degradado */
+  --gradient-header: linear-gradient(145deg, #5b2da8 0%, #8b3fbd 40%, #1c7a4a 100%);
+
+  /* Tipografía */
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-body: "Jost", system-ui, sans-serif;
+
+  /* Texto */
+  --color-text-primary: #1a1714;
+  --color-text-muted: #a09880;
+  --color-text-faint: #c8c0b0;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+/* Clases de display tipográfico */
+.font-display {
+  font-family: var(--font-display);
+}

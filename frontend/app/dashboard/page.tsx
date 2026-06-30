@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getDashboard, resetWaste } from "@/lib/api";
+import { getDashboard, resetWaste, removeWasteEntry } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
-import { Leaf, Warning, ArrowCounterClockwise, ChartBar } from "@phosphor-icons/react";
+import { Leaf, Warning, ArrowCounterClockwise, ChartBar, X, ListBullets } from "@phosphor-icons/react";
 
 type Period = "today" | "week" | "month" | "all";
 const PERIODS: { key: Period; label: string }[] = [
@@ -50,6 +50,8 @@ export default function DashboardPage() {
   const [data, setData]         = useState<any>(null);
   const [period, setPeriod]     = useState<Period>("week");
   const [resetting, setResetting] = useState(false);
+  const [showList, setShowList] = useState(false);
+  const [removingId, setRemovingId] = useState<number | null>(null);
 
   useEffect(() => {
     setData(null);
@@ -63,6 +65,14 @@ export default function DashboardPage() {
     const fresh = await getDashboard(period);
     setData(fresh);
     setResetting(false);
+  }
+
+  async function handleRemoveEntry(id: number) {
+    setRemovingId(id);
+    await removeWasteEntry(id);
+    const fresh = await getDashboard(period);
+    setData(fresh);
+    setRemovingId(null);
   }
 
   const periodLabel = period === "today" ? "hoy" : period === "week" ? "esta semana" : period === "month" ? "este mes" : "historial completo";
@@ -121,9 +131,37 @@ export default function DashboardPage() {
               <p style={{ fontFamily: "var(--font-display)", fontSize: 52, fontWeight: 400, letterSpacing: "-0.04em", color: "var(--ink-1)", lineHeight: 1 }}>
                 S/ {data.total_wasted.toFixed(2)}
               </p>
-              <p style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--ink-3)", marginTop: 6 }}>
-                {data.waste_count} producto{data.waste_count !== 1 ? "s" : ""} tirado{data.waste_count !== 1 ? "s" : ""}
-              </p>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
+                <p style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--ink-3)" }}>
+                  {data.waste_count} producto{data.waste_count !== 1 ? "s" : ""} tirado{data.waste_count !== 1 ? "s" : ""}
+                </p>
+                {data.waste_count > 0 && (
+                  <button onClick={() => setShowList(v => !v)}
+                    style={{ display: "flex", alignItems: "center", gap: 4, fontFamily: "var(--font-body)", fontSize: 11, fontWeight: 600, color: "var(--violet)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                    <ListBullets size={13} /> {showList ? "Ocultar" : "Ver detalle"}
+                  </button>
+                )}
+              </div>
+
+              {showList && data.waste_items?.length > 0 && (
+                <div className="anim-bar" style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border-lo)", display: "flex", flexDirection: "column", gap: 6 }}>
+                  <p style={{ fontFamily: "var(--font-body)", fontSize: 10, color: "var(--ink-3)", marginBottom: 2 }}>
+                    ¿Se escaneó algo por error? Quítalo del cuadre:
+                  </p>
+                  {data.waste_items.map((w: any) => (
+                    <div key={w.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "var(--bg)", borderRadius: 10 }}>
+                      <span style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--ink-1)", flex: 1 }}>{w.name}</span>
+                      <span style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--ink-3)" }}>S/ {w.price.toFixed(2)}</span>
+                      <button onClick={() => handleRemoveEntry(w.id)} disabled={removingId === w.id}
+                        title="Quitar del cuadre (no contar como pérdida)"
+                        style={{ background: "var(--danger-bg)", border: "none", borderRadius: 8, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: removingId === w.id ? 0.4 : 1 }}>
+                        <X size={12} style={{ color: "var(--danger-txt)" }} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {data.total_wasted > 0 && period !== "all" && (
                 <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--border-lo)" }}>
                   <p style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--warn-txt)" }}>

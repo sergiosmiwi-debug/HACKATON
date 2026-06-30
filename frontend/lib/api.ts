@@ -49,6 +49,14 @@ export async function resetWaste() {
   return res.json();
 }
 
+export async function removeWasteEntry(id: number) {
+  const res = await fetch(`${API}/dashboard/waste/${id}`, {
+    method: "DELETE",
+    headers: formHeaders(),
+  });
+  return res.json();
+}
+
 export async function markOpened(id: number) {
   const res = await fetch(`${API}/products/${id}/open`, {
     method: "POST",

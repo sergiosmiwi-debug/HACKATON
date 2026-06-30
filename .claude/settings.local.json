@@ -6,7 +6,16 @@
       "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\sergi\\\\OneDrive\\\\Escritorio\\\\HACKATON\\\\frontend\\\\app\\\\scan\")",
       "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\sergi\\\\OneDrive\\\\Escritorio\\\\HACKATON\\\\frontend\\\\app\\\\dashboard\")",
       "PowerShell(\"dirs created\")",
-      "Bash(node .github/skills/impeccable/scripts/context.mjs)"
+      "Bash(node .github/skills/impeccable/scripts/context.mjs)",
+      "Bash(powershell -command \"Expand-Archive -Path 'Nuevo diseño.zip' -DestinationPath 'nuevo_diseno_temp' -Force\")",
+      "Bash(npx vercel *)",
+      "Bash(which node *)",
+      "PowerShell(Get-Command vercel -ErrorAction SilentlyContinue; Get-Command npx -ErrorAction SilentlyContinue; \\(Get-Command node -ErrorAction SilentlyContinue\\).Source)",
+      "PowerShell($env:PATH -split \";\" | Where-Object { $_ -match \"node|npm\" }; ls \"$env:APPDATA\\\\npm\" -ErrorAction SilentlyContinue | Select-Object -First 10)",
+      "PowerShell(ls \"C:\\\\Program Files\\\\nodejs\" -ErrorAction SilentlyContinue; ls \"C:\\\\Program Files \\(x86\\)\\\\nodejs\" -ErrorAction SilentlyContinue; ls \"$env:LOCALAPPDATA\\\\Programs\\\\node\" -ErrorAction SilentlyContinue)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH; cd \"C:\\\\Users\\\\sergi\\\\OneDrive\\\\Escritorio\\\\HACKATON\\\\frontend\"; & \"C:\\\\Program Files\\\\nodejs\\\\npx.cmd\" vercel --prod 2>&1 | Select-Object -Last 10)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH; cd \"C:\\\\Users\\\\sergi\\\\OneDrive\\\\Escritorio\\\\HACKATON\\\\frontend\"; & \"C:\\\\Program Files\\\\nodejs\\\\npx.cmd\" vercel deploy --prod 2>&1 | Select-Object -Last 5)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH; cd \"C:\\\\Users\\\\sergi\\\\OneDrive\\\\Escritorio\\\\HACKATON\\\\frontend\"; & \"C:\\\\Program Files\\\\nodejs\\\\npx.cmd\" vercel --prod --yes 2>&1)"
     ]
   }
 }
