@@ -49,3 +49,13 @@ def get_db():
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+    with engine.connect() as conn:
+        from sqlalchemy import text
+        for table, column, ddl in [
+            ("products", "device_id", "ALTER TABLE products ADD COLUMN device_id VARCHAR"),
+            ("waste_logs", "device_id", "ALTER TABLE waste_logs ADD COLUMN device_id VARCHAR"),
+        ]:
+            existing = [row[1] for row in conn.execute(text(f"PRAGMA table_info({table})"))]
+            if column not in existing:
+                conn.execute(text(ddl))
+                conn.commit()
