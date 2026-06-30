@@ -54,6 +54,7 @@ async def scan_receipt_endpoint(
             expiry_date=expiry_date,
             status=get_status(expiry_date),
             device_id=effective_device,
+            material=item.get("material") if item.get("material") != "desconocido" else None,
         )
         db.add(product)
         created.append(item["name"])
@@ -82,6 +83,7 @@ async def scan_fridge_endpoint(
             expiry_date=expiry_date,
             status=get_status(expiry_date),
             device_id=effective_device,
+            material=item.get("material") if item.get("material") != "desconocido" else None,
         )
         db.add(product)
         created.append(item["name"])
@@ -113,6 +115,7 @@ def get_products(db: Session = Depends(get_db), did: Optional[str] = Depends(get
             "purchase_price": p.purchase_price,
             "opened_date": p.opened_date.isoformat() if p.opened_date else None,
             "changes_on_open": closed_life != opened_life,
+            "material": p.material,
         })
     db.commit()
     return sorted(result, key=lambda x: x["days_left"] if x["days_left"] is not None else 999)

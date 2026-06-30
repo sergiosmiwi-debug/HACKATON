@@ -43,7 +43,7 @@ function parseVoiceTranscript(transcript: string): VoiceItem[] {
 }
 
 function getRecycleTip(name: string): string | null {
-  return getBin(name)?.tip ?? null;
+  return getBin(null, name)?.tip ?? null;
 }
 
 export default function ScanPage() {

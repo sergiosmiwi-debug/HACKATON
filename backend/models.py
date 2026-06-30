@@ -30,6 +30,7 @@ class Product(Base):
     phone_number = Column(String, nullable=True)
     notified = Column(Integer, default=0)
     device_id = Column(String, nullable=True, default=None)
+    material = Column(String, nullable=True, default=None)
 
 class WasteLog(Base):
     __tablename__ = "waste_logs"
@@ -54,6 +55,7 @@ def init_db():
         for table, column, ddl in [
             ("products", "device_id", "ALTER TABLE products ADD COLUMN device_id VARCHAR"),
             ("waste_logs", "device_id", "ALTER TABLE waste_logs ADD COLUMN device_id VARCHAR"),
+            ("products", "material", "ALTER TABLE products ADD COLUMN material VARCHAR"),
         ]:
             existing = [row[1] for row in conn.execute(text(f"PRAGMA table_info({table})"))]
             if column not in existing:

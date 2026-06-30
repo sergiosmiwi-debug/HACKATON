@@ -5,7 +5,7 @@ import { getBin } from "@/lib/recycling";
 interface Product {
   id: number; name: string; category: string; quantity: string;
   days_left: number | null; status: string; purchase_price: number;
-  opened_date?: string | null; changes_on_open?: boolean;
+  opened_date?: string | null; changes_on_open?: boolean; material?: string | null;
 }
 
 interface Props {
@@ -28,7 +28,7 @@ const S = {
 
 export default function ProductCard({ product, onOpen, onConsume, onDiscard, selectMode, selected, onSelect }: Props) {
   const s = S[product.status as keyof typeof S] ?? S.expired;
-  const bin = getBin(product.name);
+  const bin = getBin(product.material, product.name);
   const showOpenButton = product.changes_on_open && !product.opened_date;
 
   const num  = product.days_left === null ? "–" : product.days_left < 0 ? "!" : product.days_left > 99 ? "99+" : String(product.days_left);

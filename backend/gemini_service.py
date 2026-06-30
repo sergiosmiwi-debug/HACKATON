@@ -63,6 +63,20 @@ IMPORTANTE - usa español de Perú, no de México ni otro país:
 - "frijoles" → di "frejoles" o "menestras"
 """
 
+MATERIAL_NOTE = """
+Para cada producto, identifica el MATERIAL del empaque/envase y ponlo en el campo "material".
+Usa EXACTAMENTE uno de estos valores:
+- "plastico"   (botellas PET, bolsas, envases plásticos, detergentes, shampoo)
+- "vidrio"     (botellas o frascos de vidrio)
+- "metal"      (latas de aluminio o conserva: gaseosa en lata, atún, cerveza en lata)
+- "carton"     (cajas de cartón, cereales)
+- "tetra_pak"  (cajas de leche/jugo tipo Tetra Pak, laminadas)
+- "organico"   (alimento sin empaque o empaque compostable: frutas, verduras, carnes, pan suelto)
+- "papel"      (envoltorios de papel)
+- "general"    (empaque mixto no reciclable, ej. envoltura plástica metalizada de snacks)
+Si NO puedes ver el empaque con claridad (por ejemplo en un ticket de compra impreso, donde solo hay texto), usa "desconocido". NO ADIVINES el material si no es visible.
+"""
+
 def scan_receipt(image_bytes: bytes) -> list[dict]:
     prompt = f"""Analiza esta imagen. Puede ser un ticket de compra de supermercado o una foto de alimentos/refrigerador.
 
@@ -74,8 +88,9 @@ REGLAS ESTRICTAS:
 5. Ignora nombres de tiendas, direcciones, totales, impuestos, números de teléfono, RUC/RFC y cualquier texto que no sea un producto alimenticio.
 6. Si en el ticket aparece una cantidad mayor a 1 del mismo producto (ej: "2x Plátano", "3 Manzanas"), refleja esa cantidad real en "quantity" (ej: "2 unidades"), no la ignores ni la dejes en 1.
 {PERU_SPANISH_NOTE}
+{MATERIAL_NOTE}
 Responde SOLO con un JSON válido, sin texto adicional, con este formato exacto:
-[{{"name": "Leche Gloria", "price": 4.50, "quantity": "1L"}}, ...]
+[{{"name": "Leche Gloria", "price": 4.50, "quantity": "1L", "material": "tetra_pak"}}, ...]
 Si no hay productos alimenticios claros, responde: []"""
     text = _call_vision(prompt, image_bytes)
     items = _parse_json(text)
@@ -90,8 +105,9 @@ REGLAS ESTRICTAS:
 3. NO inventes alimentos que no estén en la imagen.
 4. Cuenta cuántas unidades del mismo alimento ves (ej: si hay 2 piñas, "quantity" debe decir "2 unidades", no "1 unidad").
 {PERU_SPANISH_NOTE}
+{MATERIAL_NOTE}
 Responde SOLO con un JSON válido, sin texto adicional, con este formato exacto:
-[{{"name": "Tomates", "quantity": "3 unidades", "category": "verduras"}}, ...]
+[{{"name": "Tomates", "quantity": "3 unidades", "category": "verduras", "material": "organico"}}, ...]
 Categorías posibles: frutas, verduras, lácteos, carnes, bebidas, otros
 Si no puedes identificar nada con certeza, responde: []"""
     text = _call_vision(prompt, image_bytes)
