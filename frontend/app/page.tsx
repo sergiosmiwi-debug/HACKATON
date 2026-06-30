@@ -3,7 +3,8 @@ import { useEffect, useState, useCallback } from "react";
 import { getProducts, markOpened, discardProduct } from "@/lib/api";
 import ProductCard from "@/components/ProductCard";
 import BottomNav from "@/components/BottomNav";
-import { ArrowClockwise, CheckSquare, X, Trash, Leaf } from "@phosphor-icons/react";
+import { ArrowClockwise, CheckSquare, X, Trash, Leaf, Bell, BellSlash } from "@phosphor-icons/react";
+import { requestNotificationPermission, checkExpiringAndNotify, canNotify } from "@/lib/notifications";
 
 type Product = {
   id: number; name: string; category: string; quantity: string;
@@ -33,15 +34,27 @@ export default function Home() {
   const [selectMode, setSel]    = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [loadKey, setLoadKey]   = useState(0);
+  const [notifGranted, setNotifGranted] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     const data = await getProducts();
     setProducts(data);
     setLoading(false);
+    checkExpiringAndNotify(data);
   }, []);
 
   useEffect(() => { load(); }, [load, loadKey]);
+
+  useEffect(() => {
+    if (canNotify()) setNotifGranted(Notification.permission === "granted");
+  }, []);
+
+  async function handleEnableNotifs() {
+    const granted = await requestNotificationPermission();
+    setNotifGranted(granted);
+    if (granted) checkExpiringAndNotify(products);
+  }
 
   function toggle(id: number) {
     setSelected(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -74,6 +87,12 @@ export default function Home() {
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {!selectMode ? (
               <>
+                {canNotify() && !notifGranted && (
+                  <button onClick={handleEnableNotifs} className="active:scale-[0.95]" title="Activar notificaciones de vencimiento"
+                    style={{ width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", background: "rgba(255,255,255,0.15)", borderRadius: 10, border: "none", cursor: "pointer" }}>
+                    <BellSlash size={15} />
+                  </button>
+                )}
                 {visible.length > 0 && (
                   <button onClick={() => setSel(true)} className="active:scale-[0.95]"
                     style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-body)", fontSize: 11, fontWeight: 600, color: "#fff", background: "rgba(255,255,255,0.15)", borderRadius: 10, padding: "6px 10px", border: "none", cursor: "pointer" }}>

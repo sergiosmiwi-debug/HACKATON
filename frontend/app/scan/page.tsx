@@ -1,13 +1,13 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { scanImage, addProduct } from "@/lib/api";
+import { getBin } from "@/lib/recycling";
 import BottomNav from "@/components/BottomNav";
 import { ScanCard } from "@/components/ScanCard";
 import { useRouter } from "next/navigation";
 import {
   CameraPlus, Microphone, CheckCircle, Circle,
-  FloppyDisk, CircleNotch, X, ArrowCounterClockwise,
-  WhatsappLogo, MapPin,
+  FloppyDisk, CircleNotch, X, ArrowCounterClockwise, MapPin,
 } from "@phosphor-icons/react";
 
 type Item = { name: string; price?: number; quantity?: string };
@@ -42,21 +42,8 @@ function parseVoiceTranscript(transcript: string): VoiceItem[] {
   }).filter(Boolean) as VoiceItem[];
 }
 
-const RECYCLE_MAP: { keywords: string[]; bin: string }[] = [
-  { keywords: ["leche","yogur","jugo","tetra","caja"],  bin: "♻️ Tetra Pak → bolsa amarilla" },
-  { keywords: ["botella","gaseosa","agua","plástico"],   bin: "🔵 Plástico PET → tacho azul" },
-  { keywords: ["lata","atún","sardina","conserva"],      bin: "⚪ Metal/Lata → tacho gris" },
-  { keywords: ["vidrio","frasco","mermelada"],           bin: "🟢 Vidrio → tacho verde" },
-  { keywords: ["pan","fruta","verdura","carne","restos"],bin: "🟤 Orgánico → tacho marrón" },
-  { keywords: ["cartón","cereal","papel"],               bin: "📦 Cartón → tacho azul" },
-];
-
 function getRecycleTip(name: string): string | null {
-  const lower = name.toLowerCase();
-  for (const rule of RECYCLE_MAP) {
-    if (rule.keywords.some(k => lower.includes(k))) return rule.bin;
-  }
-  return null;
+  return getBin(name)?.tip ?? null;
 }
 
 export default function ScanPage() {
@@ -66,7 +53,6 @@ export default function ScanPage() {
   const [loading,   setLoading]   = useState(false);
   const [detected,  setDetected]  = useState<Item[]>([]);
   const [selected,  setSelected]  = useState<Set<number>>(new Set());
-  const [phone,     setPhone]     = useState("");
   const [done,      setDone]      = useState(false);
   const [listening, setListening] = useState(false);
   const [transcript,setTranscript]= useState("");
@@ -95,7 +81,7 @@ export default function ScanPage() {
     if (!file) return;
     setLoading(true);
     try {
-      const r = await scanImage(file, phone || undefined);
+      const r = await scanImage(file);
       const items: Item[] = (r.detected ?? []).map((name: string) => ({ name }));
       setDetected(items);
       setSelected(new Set(items.map((_: any, i: number) => i)));
@@ -110,7 +96,7 @@ export default function ScanPage() {
       ? voiceItems.map(v => ({ name: v.name, quantity: v.quantity, price: 0 }))
       : [...selected].map(i => ({ name: detected[i].name, quantity: detected[i].quantity ?? "1", price: detected[i].price ?? 0 }));
     for (const item of items) {
-      await addProduct(item.name, item.quantity, item.price, phone || undefined);
+      await addProduct(item.name, item.quantity, item.price);
     }
     const prev = parseInt(localStorage.getItem("qr_products") || "0");
     localStorage.setItem("qr_products", String(prev + items.length));
@@ -238,18 +224,6 @@ export default function ScanPage() {
               ))}
             </div>
 
-            <div style={{ background: "var(--surface)", border: "1px solid var(--border-lo)", borderRadius: 18, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--brand-bg)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <WhatsappLogo size={18} style={{ color: "var(--brand)" }} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontFamily: "var(--font-body)", fontSize: 9, fontWeight: 500, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 3 }}>
-                  WhatsApp <span style={{ fontSize: 8, background: "var(--brand-bg)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontWeight: 500, marginLeft: 4 }}>Opcional</span>
-                </p>
-                <input type="tel" placeholder="+51 999 999 999" value={phone} onChange={e => setPhone(e.target.value)}
-                  style={{ fontFamily: "var(--font-body)", width: "100%", fontSize: 14, fontWeight: 300, color: "var(--ink-1)", background: "none", border: "none", outline: "none" }} />
-              </div>
-            </div>
           </>
         )}
 

@@ -12,7 +12,6 @@ load_dotenv()
 from models import init_db, get_db, Product, WasteLog, ProductStatus
 from expiry import calculate_expiry, get_status
 from gemini_service import init_gemini, scan_receipt, scan_fridge
-from whatsapp_service import send_whatsapp, format_expiry_message
 
 app = FastAPI(title="QuipuRecicla API")
 
@@ -36,7 +35,6 @@ def get_device(x_device_id: Optional[str] = Header(default=None)) -> Optional[st
 @app.post("/scan/receipt")
 async def scan_receipt_endpoint(
     file: UploadFile = File(...),
-    phone: Optional[str] = None,
     device_id: Optional[str] = None,
     db: Session = Depends(get_db),
     did: Optional[str] = Depends(get_device),
@@ -55,7 +53,6 @@ async def scan_receipt_endpoint(
             purchase_date=purchase_date,
             expiry_date=expiry_date,
             status=get_status(expiry_date),
-            phone_number=phone,
             device_id=effective_device,
         )
         db.add(product)
@@ -66,7 +63,6 @@ async def scan_receipt_endpoint(
 @app.post("/scan/fridge")
 async def scan_fridge_endpoint(
     file: UploadFile = File(...),
-    phone: Optional[str] = None,
     device_id: Optional[str] = None,
     db: Session = Depends(get_db),
     did: Optional[str] = Depends(get_device),
@@ -85,7 +81,6 @@ async def scan_fridge_endpoint(
             purchase_date=purchase_date,
             expiry_date=expiry_date,
             status=get_status(expiry_date),
-            phone_number=phone,
             device_id=effective_device,
         )
         db.add(product)
@@ -137,7 +132,6 @@ def discard_product(product_id: int, db: Session = Depends(get_db), did: Optiona
     waste = WasteLog(
         product_name=product.name,
         price=product.purchase_price,
-        phone_number=product.phone_number,
         device_id=did or product.device_id,
     )
     db.add(waste)
@@ -149,7 +143,6 @@ class ProductCreate(BaseModel):
     name: str
     quantity: str = "1"
     purchase_price: float = 0.0
-    phone: Optional[str] = None
     device_id: Optional[str] = None
 
 @app.post("/products")
@@ -163,7 +156,6 @@ def create_product(data: ProductCreate, db: Session = Depends(get_db), did: Opti
         purchase_date=purchase_date,
         expiry_date=expiry_date,
         status=get_status(expiry_date),
-        phone_number=data.phone,
         device_id=data.device_id or did,
     )
     db.add(product)
@@ -179,7 +171,6 @@ def get_dashboard(
     did: Optional[str] = Depends(get_device),
     period: str = Query(default="week", description="today|week|month|all"),
 ):
-    # Rango de fechas según período
     now = datetime.utcnow()
     if period == "today":
         since = now - timedelta(days=1)
@@ -240,25 +231,3 @@ def reset_waste(db: Session = Depends(get_db), did: Optional[str] = Depends(get_
     q.delete()
     db.commit()
     return {"message": "Contador reiniciado"}
-
-# --- Notificaciones ---
-
-@app.post("/notify/check")
-def check_and_notify(db: Session = Depends(get_db)):
-    products = db.query(Product).filter(
-        Product.status != "discarded",
-        Product.phone_number != None,
-        Product.notified == 0,
-    ).all()
-    sent = 0
-    for p in products:
-        if not p.expiry_date:
-            continue
-        days_left = (p.expiry_date - datetime.utcnow()).days
-        if days_left <= 2:
-            msg = format_expiry_message(p.name, days_left)
-            if send_whatsapp(p.phone_number, msg):
-                p.notified = 1
-                sent += 1
-    db.commit()
-    return {"notifications_sent": sent}

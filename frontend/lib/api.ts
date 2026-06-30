@@ -73,20 +73,19 @@ export async function discardProduct(id: number) {
   return res.json();
 }
 
-export async function scanImage(file: File, phone?: string) {
+export async function scanImage(file: File) {
   const form = new FormData();
   form.append("file", file);
-  if (phone) form.append("phone", phone);
   form.append("device_id", getDeviceId());
   const res = await fetch(`${API}/scan/receipt`, { method: "POST", body: form });
   return res.json();
 }
 
-export async function addProduct(name: string, quantity: string, price: number, phone?: string) {
+export async function addProduct(name: string, quantity: string, price: number) {
   const res = await fetch(`${API}/products`, {
     method: "POST",
     headers: { ...headers(), "Content-Type": "application/json" },
-    body: JSON.stringify({ name, quantity, purchase_price: price, phone, device_id: getDeviceId() }),
+    body: JSON.stringify({ name, quantity, purchase_price: price, device_id: getDeviceId() }),
   });
   return res.json();
 }
