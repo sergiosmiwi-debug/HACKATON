@@ -64,16 +64,14 @@ IMPORTANTE - usa español de Perú, no de México ni otro país:
 """
 
 MATERIAL_NOTE = """
-Para cada producto, identifica el MATERIAL del empaque/envase y ponlo en el campo "material".
+Para cada producto, identifica el MATERIAL PREDOMINANTE del empaque/envase (el que define cómo se desecha) y ponlo en el campo "material".
 Usa EXACTAMENTE uno de estos valores:
 - "plastico"   (botellas PET, bolsas, envases plásticos, detergentes, shampoo)
 - "vidrio"     (botellas o frascos de vidrio)
 - "metal"      (latas de aluminio o conserva: gaseosa en lata, atún, cerveza en lata)
-- "carton"     (cajas de cartón, cereales)
-- "tetra_pak"  (cajas de leche/jugo tipo Tetra Pak, laminadas)
+- "carton"     (cajas de cartón, cereales, cajas tipo Tetra Pak de leche/jugo aunque tengan tapa de plástico, envoltorios de papel)
 - "organico"   (alimento sin empaque o empaque compostable: frutas, verduras, carnes, pan suelto)
-- "papel"      (envoltorios de papel)
-- "general"    (empaque mixto no reciclable, ej. envoltura plástica metalizada de snacks)
+- "general"    (empaque mixto no reciclable que NO se puede separar a mano, ej. bolsas de snacks/papitas/galletas con interior plateado metalizado — aunque tengan aluminio, van como no reciclable)
 Si NO puedes ver el empaque con claridad (por ejemplo en un ticket de compra impreso, donde solo hay texto), usa "desconocido". NO ADIVINES el material si no es visible.
 """
 
@@ -90,7 +88,7 @@ REGLAS ESTRICTAS:
 {PERU_SPANISH_NOTE}
 {MATERIAL_NOTE}
 Responde SOLO con un JSON válido, sin texto adicional, con este formato exacto:
-[{{"name": "Leche Gloria", "price": 4.50, "quantity": "1L", "material": "tetra_pak"}}, ...]
+[{{"name": "Leche Gloria", "price": 4.50, "quantity": "1L", "material": "carton"}}, ...]
 Si no hay productos alimenticios claros, responde: []"""
     text = _call_vision(prompt, image_bytes)
     items = _parse_json(text)
