@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { getProducts, markOpened, discardProduct } from "@/lib/api";
+import { getProducts, markOpened, consumeProduct, discardProduct } from "@/lib/api";
 import ProductCard from "@/components/ProductCard";
 import BottomNav from "@/components/BottomNav";
 import { ArrowClockwise, CheckSquare, X, Trash, Leaf, Bell, BellSlash } from "@phosphor-icons/react";
@@ -9,6 +9,7 @@ import { requestNotificationPermission, checkExpiringAndNotify, canNotify } from
 type Product = {
   id: number; name: string; category: string; quantity: string;
   days_left: number | null; status: string; purchase_price: number;
+  opened_date?: string | null; changes_on_open?: boolean;
   removing?: boolean;
 };
 
@@ -62,6 +63,7 @@ export default function Home() {
   function exitSel() { setSel(false); setSelected(new Set()); }
 
   async function handleOpen(id: number) { await markOpened(id); setLoadKey(k => k + 1); }
+  function handleConsume(id: number) { consumeProduct(id); animateOut([id], setProducts); }
   function handleDiscard(id: number) { discardProduct(id); animateOut([id], setProducts); }
   function handleDiscardSel() { const ids = [...selected]; ids.forEach(id => discardProduct(id)); animateOut(ids, setProducts, exitSel); }
   function handleClearAll() { const ids = products.map(p => p.id); ids.forEach(id => discardProduct(id)); animateOut(ids, setProducts); }
@@ -173,7 +175,7 @@ export default function Home() {
             }}>
               <div style={{ overflow: "hidden" }}>
                 <div className="anim-card" style={{ animationDelay: `${Math.min(i*45, 200)}ms` }}>
-                  <ProductCard product={p} onOpen={handleOpen} onDiscard={handleDiscard} selectMode={selectMode} selected={selected.has(p.id)} onSelect={toggle} />
+                  <ProductCard product={p} onOpen={handleOpen} onConsume={handleConsume} onDiscard={handleDiscard} selectMode={selectMode} selected={selected.has(p.id)} onSelect={toggle} />
                 </div>
               </div>
             </div>

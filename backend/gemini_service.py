@@ -54,8 +54,17 @@ def _is_valid_food_item(name: str) -> bool:
         return False
     return True
 
+PERU_SPANISH_NOTE = """
+IMPORTANTE - usa español de Perú, no de México ni otro país:
+- "elote" → di "choclo"
+- "aguacate" → di "palta"
+- "durazno" → está bien, también se usa "melocotón"
+- "papaya", "plátano", "camote" tal cual (no "batata")
+- "frijoles" → di "frejoles" o "menestras"
+"""
+
 def scan_receipt(image_bytes: bytes) -> list[dict]:
-    prompt = """Analiza esta imagen. Puede ser un ticket de compra de supermercado o una foto de alimentos/refrigerador.
+    prompt = f"""Analiza esta imagen. Puede ser un ticket de compra de supermercado o una foto de alimentos/refrigerador.
 
 REGLAS ESTRICTAS:
 1. SOLO incluye productos alimenticios o de despensa (comida, bebidas, lácteos, frutas, verduras, carnes, etc).
@@ -63,24 +72,26 @@ REGLAS ESTRICTAS:
 3. Si no estás seguro de qué es un producto o su nombre es ambiguo, OMÍTELO. Es preferible omitir un producto dudoso que inventar uno incorrecto.
 4. NO inventes productos que no estén claramente visibles en la imagen.
 5. Ignora nombres de tiendas, direcciones, totales, impuestos, números de teléfono, RUC/RFC y cualquier texto que no sea un producto alimenticio.
-
+6. Si en el ticket aparece una cantidad mayor a 1 del mismo producto (ej: "2x Plátano", "3 Manzanas"), refleja esa cantidad real en "quantity" (ej: "2 unidades"), no la ignores ni la dejes en 1.
+{PERU_SPANISH_NOTE}
 Responde SOLO con un JSON válido, sin texto adicional, con este formato exacto:
-[{"name": "Leche Gloria", "price": 4.50, "quantity": "1L"}, ...]
+[{{"name": "Leche Gloria", "price": 4.50, "quantity": "1L"}}, ...]
 Si no hay productos alimenticios claros, responde: []"""
     text = _call_vision(prompt, image_bytes)
     items = _parse_json(text)
     return [it for it in items if _is_valid_food_item(it.get("name", ""))]
 
 def scan_fridge(image_bytes: bytes) -> list[dict]:
-    prompt = """Analiza esta foto del interior de un refrigerador o de alimentos.
+    prompt = f"""Analiza esta foto del interior de un refrigerador o de alimentos.
 
 REGLAS ESTRICTAS:
 1. SOLO identifica alimentos claramente visibles y reconocibles.
 2. Si un objeto no es claramente un alimento, o no puedes identificarlo con certeza, OMÍTELO.
 3. NO inventes alimentos que no estén en la imagen.
-
+4. Cuenta cuántas unidades del mismo alimento ves (ej: si hay 2 piñas, "quantity" debe decir "2 unidades", no "1 unidad").
+{PERU_SPANISH_NOTE}
 Responde SOLO con un JSON válido, sin texto adicional, con este formato exacto:
-[{"name": "Tomates", "quantity": "3 unidades", "category": "verduras"}, ...]
+[{{"name": "Tomates", "quantity": "3 unidades", "category": "verduras"}}, ...]
 Categorías posibles: frutas, verduras, lácteos, carnes, bebidas, otros
 Si no puedes identificar nada con certeza, responde: []"""
     text = _call_vision(prompt, image_bytes)

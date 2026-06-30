@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from models import init_db, get_db, Product, WasteLog, ProductStatus
-from expiry import calculate_expiry, get_status
+from expiry import calculate_expiry, get_status, get_shelf_life
 from gemini_service import init_gemini, scan_receipt, scan_fridge
 
 app = FastAPI(title="QuipuRecicla API")
@@ -102,6 +102,8 @@ def get_products(db: Session = Depends(get_db), did: Optional[str] = Depends(get
         if p.expiry_date:
             days_left = (p.expiry_date - datetime.utcnow()).days
             p.status = get_status(p.expiry_date)
+        closed_life = get_shelf_life(p.name, opened=False)
+        opened_life = get_shelf_life(p.name, opened=True)
         result.append({
             "id": p.id, "name": p.name, "category": p.category,
             "quantity": p.quantity,
@@ -109,6 +111,8 @@ def get_products(db: Session = Depends(get_db), did: Optional[str] = Depends(get
             "expiry_date": p.expiry_date.isoformat() if p.expiry_date else None,
             "days_left": days_left, "status": p.status,
             "purchase_price": p.purchase_price,
+            "opened_date": p.opened_date.isoformat() if p.opened_date else None,
+            "changes_on_open": closed_life != opened_life,
         })
     db.commit()
     return sorted(result, key=lambda x: x["days_left"] if x["days_left"] is not None else 999)
@@ -123,6 +127,15 @@ def mark_opened(product_id: int, db: Session = Depends(get_db)):
     product.status = get_status(product.expiry_date)
     db.commit()
     return {"message": f"{product.name} marcado como abierto", "new_expiry": product.expiry_date.isoformat()}
+
+@app.post("/products/{product_id}/consume")
+def consume_product(product_id: int, db: Session = Depends(get_db)):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    product.status = "discarded"
+    db.commit()
+    return {"message": f"{product.name} marcado como consumido"}
 
 @app.delete("/products/{product_id}")
 def discard_product(product_id: int, db: Session = Depends(get_db), did: Optional[str] = Depends(get_device)):
@@ -231,3 +244,12 @@ def reset_waste(db: Session = Depends(get_db), did: Optional[str] = Depends(get_
     q.delete()
     db.commit()
     return {"message": "Contador reiniciado"}
+
+@app.delete("/admin/wipe-all")
+def wipe_all(db: Session = Depends(get_db), x_admin_key: Optional[str] = Header(default=None)):
+    if not os.getenv("ADMIN_WIPE_KEY") or x_admin_key != os.getenv("ADMIN_WIPE_KEY"):
+        raise HTTPException(status_code=403, detail="No autorizado")
+    db.query(Product).delete()
+    db.query(WasteLog).delete()
+    db.commit()
+    return {"message": "Base de datos vaciada por completo"}

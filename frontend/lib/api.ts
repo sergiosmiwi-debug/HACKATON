@@ -65,6 +65,14 @@ export async function markOpened(id: number) {
   return res.json();
 }
 
+export async function consumeProduct(id: number) {
+  const res = await fetch(`${API}/products/${id}/consume`, {
+    method: "POST",
+    headers: formHeaders(),
+  });
+  return res.json();
+}
+
 export async function discardProduct(id: number) {
   const res = await fetch(`${API}/products/${id}`, {
     method: "DELETE",
