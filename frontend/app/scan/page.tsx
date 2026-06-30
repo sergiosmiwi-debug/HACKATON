@@ -11,7 +11,36 @@ import {
 } from "@phosphor-icons/react";
 
 type Item = { name: string; price?: number; quantity?: string };
+type VoiceItem = { name: string; quantity: string };
 type InputMode = "photo" | "voice" | null;
+
+const NUM_WORDS: Record<string, number> = {
+  un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5,
+  seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, media: 1,
+};
+
+function parseVoiceTranscript(transcript: string): VoiceItem[] {
+  const raw = transcript
+    .replace(/\b(y seguido|seguido|también|luego|después|más)\b/gi, ",")
+    .replace(/\s+y\s+/gi, ",");
+  const segments = raw.split(/[,\n·;]+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  return segments.map(seg => {
+    const words = seg.split(/\s+/);
+    let qty = "1";
+    let nameStart = 0;
+    const first = words[0]?.toLowerCase() ?? "";
+    if (/^\d+$/.test(first)) {
+      qty = first; nameStart = 1;
+    } else if (NUM_WORDS[first] !== undefined) {
+      qty = String(NUM_WORDS[first]); nameStart = 1;
+    }
+    const name = words.slice(nameStart).join(" ").trim();
+    return name ? { name, quantity: qty } : null;
+  }).filter(Boolean) as VoiceItem[];
+}
 
 const RECYCLE_MAP: { keywords: string[]; bin: string }[] = [
   { keywords: ["leche","yogur","jugo","tetra","caja"],  bin: "♻️ Tetra Pak → bolsa amarilla" },
@@ -41,7 +70,7 @@ export default function ScanPage() {
   const [done,      setDone]      = useState(false);
   const [listening, setListening] = useState(false);
   const [transcript,setTranscript]= useState("");
-  const [voiceItems,setVoiceItems]= useState<string[]>([]);
+  const [voiceItems,setVoiceItems]= useState<VoiceItem[]>([]);
   const [recycleTip,setRecycleTip]= useState<string | null>(null);
   const [stats,     setStats]     = useState({ scans: 0, week: 0, products: 0 });
 
@@ -78,7 +107,7 @@ export default function ScanPage() {
   async function handleSave() {
     setLoading(true);
     const items = inputMode === "voice"
-      ? voiceItems.map(n => ({ name: n, quantity: "1", price: 0 }))
+      ? voiceItems.map(v => ({ name: v.name, quantity: v.quantity, price: 0 }))
       : [...selected].map(i => ({ name: detected[i].name, quantity: detected[i].quantity ?? "1", price: detected[i].price ?? 0 }));
     for (const item of items) {
       await addProduct(item.name, item.quantity, item.price, phone || undefined);
@@ -110,7 +139,7 @@ export default function ScanPage() {
     recogRef.current?.stop();
     setListening(false);
     if (transcript.trim()) {
-      const items = transcript.split(/[,\n·]+/).map(s => s.trim()).filter(Boolean);
+      const items = parseVoiceTranscript(transcript);
       setVoiceItems(items);
       setTranscript("");
     }
@@ -309,10 +338,15 @@ export default function ScanPage() {
                 <p style={{ fontFamily: "var(--font-body)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)" }}>
                   {voiceItems.length} producto{voiceItems.length !== 1 ? "s" : ""} detectado{voiceItems.length !== 1 ? "s" : ""}
                 </p>
-                {voiceItems.map((name, i) => (
+                {voiceItems.map((item, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, background: "var(--brand-bg)", border: "1px solid var(--brand-mid)" }}>
                     <CheckCircle size={18} weight="fill" style={{ color: "var(--brand)", flexShrink: 0 }} />
-                    <span style={{ fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 500, color: "var(--ink-1)", flex: 1 }}>{name}</span>
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 500, color: "var(--ink-1)" }}>{item.name}</span>
+                      {item.quantity !== "1" && (
+                        <span style={{ fontFamily: "var(--font-body)", fontSize: 11, color: "var(--fresh-txt)", background: "var(--fresh-bg)", borderRadius: 6, padding: "1px 6px", marginLeft: 8, fontWeight: 600 }}>×{item.quantity}</span>
+                      )}
+                    </div>
                     <button onClick={() => setVoiceItems(v => v.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", padding: 0 }}>
                       <X size={14} />
                     </button>

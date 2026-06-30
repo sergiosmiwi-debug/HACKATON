@@ -33,9 +33,17 @@ export async function getProducts() {
   }
 }
 
-export async function getDashboard() {
-  const res = await fetch(`${API}/dashboard`, {
+export async function getDashboard(period: "today" | "week" | "month" | "all" = "week") {
+  const res = await fetch(`${API}/dashboard?period=${period}`, {
     cache: "no-store",
+    headers: formHeaders(),
+  });
+  return res.json();
+}
+
+export async function resetWaste() {
+  const res = await fetch(`${API}/dashboard/reset`, {
+    method: "DELETE",
     headers: formHeaders(),
   });
   return res.json();

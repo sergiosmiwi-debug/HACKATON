@@ -23,6 +23,23 @@ const S = {
   expired: { color: "var(--muted)",  bg: "var(--muted-bg)",  txt: "var(--muted-txt)",  label: "Vencido" },
 } as const;
 
+const BIN_COLORS: { keywords: string[]; bin: string; color: string; bg: string }[] = [
+  { keywords: ["leche","yogur","jugo","tetra","caja"],  bin: "Tetra Pak",  color: "#b8860b", bg: "#fff8cc" },
+  { keywords: ["botella","gaseosa","agua","plástico"],   bin: "Plástico",   color: "#1a6bb5", bg: "#ddeeff" },
+  { keywords: ["lata","atún","sardina","conserva"],      bin: "Metal",      color: "#6b7280", bg: "#f0f0f0" },
+  { keywords: ["vidrio","frasco","mermelada"],           bin: "Vidrio",     color: "#1c7a4a", bg: "#d4f0e0" },
+  { keywords: ["pan","fruta","verdura","carne","restos"],bin: "Orgánico",   color: "#7c4f1c", bg: "#efe0c8" },
+  { keywords: ["cartón","cereal","papel"],               bin: "Cartón",     color: "#1a6bb5", bg: "#ddeeff" },
+];
+
+function getBinColor(name: string) {
+  const lower = name.toLowerCase();
+  for (const rule of BIN_COLORS) {
+    if (rule.keywords.some(k => lower.includes(k))) return rule;
+  }
+  return null;
+}
+
 const RECYCLE_MAP: { keywords: string[]; bin: string }[] = [
   { keywords: ["leche","yogur","jugo","tetra","caja"],   bin: "♻️ Tetra Pak → bolsa amarilla" },
   { keywords: ["botella","gaseosa","agua","plástico"],    bin: "🔵 Plástico PET → tacho azul"  },
@@ -43,6 +60,7 @@ function getRecycleTip(name: string): string | null {
 export default function ProductCard({ product, onOpen, onDiscard, selectMode, selected, onSelect }: Props) {
   const s = S[product.status as keyof typeof S] ?? S.expired;
   const [recycleTip, setRecycleTip] = useState<string | null>(null);
+  const bin = getBinColor(product.name);
 
   const num  = product.days_left === null ? "–" : product.days_left < 0 ? "!" : product.days_left > 99 ? "99+" : String(product.days_left);
   const unit = product.days_left === null ? "" : product.days_left < 0 ? "vencido" : product.days_left === 0 ? "hoy" : product.days_left === 1 ? "día" : "días";
@@ -110,8 +128,16 @@ export default function ProductCard({ product, onOpen, onDiscard, selectMode, se
           </div>
         </div>
 
+        {bin && !selectMode && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border-lo)" }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: bin.color, flexShrink: 0 }} />
+            <span style={{ fontFamily: "var(--font-body)", fontSize: 10, color: bin.color, fontWeight: 600 }}>{bin.bin}</span>
+            <span style={{ fontFamily: "var(--font-body)", fontSize: 10, color: "var(--ink-3)" }}>al tirar</span>
+          </div>
+        )}
+
         {!selectMode && (
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--border-lo)" }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, marginTop: bin ? 8 : 12, paddingTop: bin ? 8 : 10, borderTop: bin ? "1px solid var(--border-lo)" : "1px solid var(--border-lo)" }}>
             <button onClick={e => { e.stopPropagation(); onOpen(product.id); }} className="active:scale-[0.94]"
               style={{ display: "flex", alignItems: "center", gap: 4, fontFamily: "var(--font-body)", fontSize: 11, fontWeight: 600, color: "var(--ink-2)", background: "var(--bg)", border: "1px solid var(--border-lo)", borderRadius: 10, padding: "5px 10px", cursor: "pointer" }}>
               <ArrowBendUpRight size={11} /> Abrir
