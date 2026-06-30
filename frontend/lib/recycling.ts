@@ -24,3 +24,22 @@ export function getBin(material: string | null | undefined, name?: string) {
   }
   return UNKNOWN_BIN;
 }
+
+// Opciones más probables según el tipo de producto, para que el usuario elija rápido
+// cuando no se pudo identificar el empaque automáticamente.
+const CANDIDATE_RULES: { keywords: string[]; options: string[] }[] = [
+  { keywords: ["cerveza", "vino", "champaña"], options: ["vidrio", "metal"] },
+  { keywords: ["gaseosa", "agua", "refresco", "soda"], options: ["plastico", "metal", "vidrio"] },
+  { keywords: ["leche", "jugo", "néctar", "nectar"], options: ["carton", "plastico", "vidrio"] },
+  { keywords: ["atún", "atun", "sardina", "conserva", "durazno en lata"], options: ["metal", "vidrio"] },
+  { keywords: ["mermelada", "salsa", "aceituna"], options: ["vidrio", "plastico"] },
+];
+const DEFAULT_CANDIDATES = ["plastico", "vidrio", "metal", "carton", "organico", "general"];
+
+export function getCandidateMaterials(name: string): string[] {
+  const lower = name.toLowerCase();
+  for (const rule of CANDIDATE_RULES) {
+    if (rule.keywords.some(k => lower.includes(k))) return rule.options;
+  }
+  return DEFAULT_CANDIDATES;
+}

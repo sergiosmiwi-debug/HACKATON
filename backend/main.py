@@ -160,6 +160,7 @@ class ProductCreate(BaseModel):
     quantity: str = "1"
     purchase_price: float = 0.0
     device_id: Optional[str] = None
+    material: Optional[str] = None
 
 @app.post("/products")
 def create_product(data: ProductCreate, db: Session = Depends(get_db), did: Optional[str] = Depends(get_device)):
@@ -173,11 +174,24 @@ def create_product(data: ProductCreate, db: Session = Depends(get_db), did: Opti
         expiry_date=expiry_date,
         status=get_status(expiry_date),
         device_id=data.device_id or did,
+        material=data.material,
     )
     db.add(product)
     db.commit()
     db.refresh(product)
     return {"id": product.id, "name": product.name, "expiry_date": product.expiry_date.isoformat()}
+
+class MaterialUpdate(BaseModel):
+    material: str
+
+@app.post("/products/{product_id}/material")
+def set_material(product_id: int, data: MaterialUpdate, db: Session = Depends(get_db)):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    product.material = data.material
+    db.commit()
+    return {"message": f"{product.name} clasificado como {data.material}"}
 
 # --- Dashboard ---
 

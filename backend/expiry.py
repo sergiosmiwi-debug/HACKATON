@@ -17,7 +17,11 @@ SHELF_LIFE = {
     "mantequilla": {"closed": 30, "opened": 14},
     "jugo": {"closed": 14, "opened": 5},
     "refresco": {"closed": 180, "opened": 3},
-    "default": {"closed": 7, "opened": 5},
+    "gaseosa": {"closed": 180, "opened": 3},
+    "cerveza": {"closed": 270, "opened": 1},
+    "vino": {"closed": 365, "opened": 5},
+    # Sellado pero sin fecha clara de vencimiento corto: no cuenta hasta que se abre.
+    "default": {"closed": 180, "opened": 14},
 }
 
 def get_shelf_life(product_name: str, opened: bool = False) -> int:

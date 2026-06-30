@@ -11,13 +11,29 @@ import {
 } from "@phosphor-icons/react";
 
 type Item = { name: string; price?: number; quantity?: string };
-type VoiceItem = { name: string; quantity: string };
+type VoiceItem = { name: string; quantity: string; material: string | null };
 type InputMode = "photo" | "voice" | null;
 
 const NUM_WORDS: Record<string, number> = {
   un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5,
   seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, media: 1,
 };
+
+// Orden importa: palabras específicas (vidrio, lata) priman sobre genéricas (botella)
+const MATERIAL_WORDS: { words: string[]; material: string }[] = [
+  { words: ["vidrio", "frasco"], material: "vidrio" },
+  { words: ["lata", "tarro", "envase metálico"], material: "metal" },
+  { words: ["caja", "cartón", "carton", "tetra pak"], material: "carton" },
+  { words: ["botella", "plástico", "plastico", "bolsa"], material: "plastico" },
+];
+
+function detectMaterial(text: string): string | null {
+  const lower = text.toLowerCase();
+  for (const rule of MATERIAL_WORDS) {
+    if (rule.words.some(w => lower.includes(w))) return rule.material;
+  }
+  return null;
+}
 
 function parseVoiceTranscript(transcript: string): VoiceItem[] {
   const raw = transcript
@@ -38,7 +54,7 @@ function parseVoiceTranscript(transcript: string): VoiceItem[] {
       qty = String(NUM_WORDS[first]); nameStart = 1;
     }
     const name = words.slice(nameStart).join(" ").trim();
-    return name ? { name, quantity: qty } : null;
+    return name ? { name, quantity: qty, material: detectMaterial(seg) } : null;
   }).filter(Boolean) as VoiceItem[];
 }
 
@@ -93,10 +109,10 @@ export default function ScanPage() {
   async function handleSave() {
     setLoading(true);
     const items = inputMode === "voice"
-      ? voiceItems.map(v => ({ name: v.name, quantity: v.quantity, price: 0 }))
-      : [...selected].map(i => ({ name: detected[i].name, quantity: detected[i].quantity ?? "1", price: detected[i].price ?? 0 }));
+      ? voiceItems.map(v => ({ name: v.name, quantity: v.quantity, price: 0, material: v.material }))
+      : [...selected].map(i => ({ name: detected[i].name, quantity: detected[i].quantity ?? "1", price: detected[i].price ?? 0, material: null as string | null }));
     for (const item of items) {
-      await addProduct(item.name, item.quantity, item.price);
+      await addProduct(item.name, item.quantity, item.price, item.material);
     }
     const prev = parseInt(localStorage.getItem("qr_products") || "0");
     localStorage.setItem("qr_products", String(prev + items.length));

@@ -1,6 +1,6 @@
 "use client";
 import { ArrowBendUpRight, Check, Trash, CheckCircle, Circle } from "@phosphor-icons/react";
-import { getBin } from "@/lib/recycling";
+import { getBin, getCandidateMaterials, MATERIAL_BINS } from "@/lib/recycling";
 
 interface Product {
   id: number; name: string; category: string; quantity: string;
@@ -13,6 +13,7 @@ interface Props {
   onOpen: (id: number) => void;
   onConsume: (id: number) => void;
   onDiscard: (id: number) => void;
+  onSetMaterial?: (id: number, material: string) => void;
   selectMode?: boolean;
   selected?: boolean;
   onSelect?: (id: number) => void;
@@ -26,10 +27,11 @@ const S = {
 } as const;
 
 
-export default function ProductCard({ product, onOpen, onConsume, onDiscard, selectMode, selected, onSelect }: Props) {
+export default function ProductCard({ product, onOpen, onConsume, onDiscard, onSetMaterial, selectMode, selected, onSelect }: Props) {
   const s = S[product.status as keyof typeof S] ?? S.expired;
   const bin = getBin(product.material, product.name);
   const showOpenButton = product.changes_on_open && !product.opened_date;
+  const needsMaterial = !product.material && bin.bin === "Sin identificar";
 
   const num  = product.days_left === null ? "–" : product.days_left < 0 ? "!" : product.days_left > 99 ? "99+" : String(product.days_left);
   const unit = product.days_left === null ? "" : product.days_left < 0 ? "vencido" : product.days_left === 0 ? "hoy" : product.days_left === 1 ? "día" : "días";
@@ -85,11 +87,28 @@ export default function ProductCard({ product, onOpen, onConsume, onDiscard, sel
           </div>
         </div>
 
-        {!selectMode && (
+        {!selectMode && !needsMaterial && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border-lo)" }}>
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: bin.color, flexShrink: 0 }} />
             <span style={{ fontFamily: "var(--font-body)", fontSize: 10, color: bin.color, fontWeight: 600 }}>{bin.bin}</span>
             <span style={{ fontFamily: "var(--font-body)", fontSize: 10, color: "var(--ink-3)" }}>al tirar</span>
+          </div>
+        )}
+
+        {!selectMode && needsMaterial && onSetMaterial && (
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border-lo)" }}>
+            <p style={{ fontFamily: "var(--font-body)", fontSize: 10, color: "var(--ink-3)", marginBottom: 6 }}>
+              ¿De qué es el envase?
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {getCandidateMaterials(product.name).map(m => (
+                <button key={m} onClick={e => { e.stopPropagation(); onSetMaterial(product.id, m); }} className="active:scale-[0.94]"
+                  style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-body)", fontSize: 11, fontWeight: 600, color: "var(--ink-2)", background: "var(--bg)", border: "1px solid var(--border-lo)", borderRadius: 99, padding: "5px 10px", cursor: "pointer" }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: MATERIAL_BINS[m].color, flexShrink: 0 }} />
+                  {MATERIAL_BINS[m].bin}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

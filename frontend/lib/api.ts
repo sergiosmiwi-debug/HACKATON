@@ -89,11 +89,20 @@ export async function scanImage(file: File) {
   return res.json();
 }
 
-export async function addProduct(name: string, quantity: string, price: number) {
+export async function addProduct(name: string, quantity: string, price: number, material?: string | null) {
   const res = await fetch(`${API}/products`, {
     method: "POST",
     headers: { ...headers(), "Content-Type": "application/json" },
-    body: JSON.stringify({ name, quantity, purchase_price: price, device_id: getDeviceId() }),
+    body: JSON.stringify({ name, quantity, purchase_price: price, device_id: getDeviceId(), material }),
+  });
+  return res.json();
+}
+
+export async function setProductMaterial(id: number, material: string) {
+  const res = await fetch(`${API}/products/${id}/material`, {
+    method: "POST",
+    headers: { ...headers(), "Content-Type": "application/json" },
+    body: JSON.stringify({ material }),
   });
   return res.json();
 }
