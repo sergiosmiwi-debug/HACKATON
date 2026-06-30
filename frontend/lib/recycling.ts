@@ -29,12 +29,14 @@ export function getBin(material: string | null | undefined, name?: string) {
 // cuando no se pudo identificar el empaque automáticamente.
 const CANDIDATE_RULES: { keywords: string[]; options: string[] }[] = [
   { keywords: ["cerveza", "vino", "champaña"], options: ["vidrio", "metal"] },
-  { keywords: ["gaseosa", "agua", "refresco", "soda"], options: ["plastico", "metal", "vidrio"] },
+  { keywords: ["gaseosa", "agua", "refresco", "soda", "bebida"], options: ["plastico", "metal", "vidrio"] },
   { keywords: ["leche", "jugo", "néctar", "nectar"], options: ["carton", "plastico", "vidrio"] },
   { keywords: ["atún", "atun", "sardina", "conserva", "durazno en lata"], options: ["metal", "vidrio"] },
   { keywords: ["mermelada", "salsa", "aceituna"], options: ["vidrio", "plastico"] },
 ];
-const DEFAULT_CANDIDATES = ["plastico", "vidrio", "metal", "carton", "organico", "general"];
+// Para envases en general (sin pista de qué bebida/alimento es): solo materiales de empaque,
+// no "orgánico" (eso es para alimento sin envase) ni "general" (eso es para empaques mixtos no separables).
+const DEFAULT_CANDIDATES = ["plastico", "vidrio", "metal", "carton"];
 
 export function getCandidateMaterials(name: string): string[] {
   const lower = name.toLowerCase();

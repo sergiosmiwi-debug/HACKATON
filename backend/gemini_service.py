@@ -42,6 +42,10 @@ MIN_NAME_LEN = 2
 JUNK_KEYWORDS = [
     "boutique", "tarjeta", "card", "razon social", "ruc", "rfc", "tel.", "telefono",
     "direccion", "av.", "calle", "col.", "cuernavaca", "moda", "huella", "www.", ".com",
+    # productos de limpieza/higiene: no son comida ni despensa, no se guardan en la alacena
+    "detergente", "lejía", "lejia", "cloro", "suavizante", "jabón", "jabon", "shampoo",
+    "champú", "champu", "desinfectante", "insecticida", "papel higiénico", "papel higienico",
+    "pañal", "panal", "toalla higiénica", "toalla higienica", "limpiador", "lavavajilla",
 ]
 
 def _is_valid_food_item(name: str) -> bool:
@@ -66,7 +70,7 @@ IMPORTANTE - usa español de Perú, no de México ni otro país:
 MATERIAL_NOTE = """
 Para cada producto, identifica el MATERIAL PREDOMINANTE del empaque/envase (el que define cómo se desecha) y ponlo en el campo "material".
 Usa EXACTAMENTE uno de estos valores:
-- "plastico"   (botellas PET, bolsas, envases plásticos, detergentes, shampoo)
+- "plastico"   (botellas PET, bolsas, envases plásticos de alimentos)
 - "vidrio"     (botellas o frascos de vidrio)
 - "metal"      (latas de aluminio o conserva: gaseosa en lata, atún, cerveza en lata)
 - "carton"     (cajas de cartón, cereales, cajas tipo Tetra Pak de leche/jugo aunque tengan tapa de plástico, envoltorios de papel)
@@ -79,7 +83,7 @@ def scan_receipt(image_bytes: bytes) -> list[dict]:
     prompt = f"""Analiza esta imagen. Puede ser un ticket de compra de supermercado o una foto de alimentos/refrigerador.
 
 REGLAS ESTRICTAS:
-1. SOLO incluye productos alimenticios o de despensa (comida, bebidas, lácteos, frutas, verduras, carnes, etc).
+1. SOLO incluye productos alimenticios o de despensa (comida, bebidas, lácteos, frutas, verduras, carnes, etc). EXCLUYE productos de limpieza o higiene (detergente, jabón, shampoo, papel higiénico, pañales) aunque aparezcan en el mismo ticket: esos NO van en la lista.
 2. Si la imagen NO es un ticket de compra ni contiene alimentos reconocibles (por ejemplo: una tarjeta de presentación, un documento, un objeto no comestible, texto ilegible), responde exactamente: []
 3. Si no estás seguro de qué es un producto o su nombre es ambiguo, OMÍTELO. Es preferible omitir un producto dudoso que inventar uno incorrecto.
 4. NO inventes productos que no estén claramente visibles en la imagen.
