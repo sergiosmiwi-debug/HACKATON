@@ -1,66 +1,69 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500;600;700&display=swap");
 
-/* ─── Tokens ─────────────────────────────────────── */
 :root {
-  /* Surface */
-  --bg:         #f2f7f3;
-  --surface:    #ffffff;
-  --surface-hi: #edf5ee;
-  --border:     #d8eadb;
-  --border-lo:  #e8f2ea;
+  /* Superficies */
+  --bg:          #f5f2eb;
+  --surface:     #ffffff;
+  --border:      #e0d9cc;
+  --border-lo:   #e8e2d8;
 
-  /* Text */
-  --ink-1: #1a2220;
-  --ink-2: #4a5652;
-  --ink-3: #7a8a82;
+  /* Verdes */
+  --brand:       #1c3d2a;
+  --brand-mid:   #1c7a4a;
+  --brand-bg:    #e4f4ec;
+  --brand-text:  #f5f2eb;
 
-  /* Brand (deep forest green) */
-  --brand:      #1a4a28;
-  --brand-mid:  #286636;
-  --brand-text: #ffffff;
-  --brand-bg:   #e0f2e6;
+  /* Violeta */
+  --violet:      #7c3fbf;
+  --violet-dark: #5b2a90;
+  --violet-light:#9b5fd4;
+  --violet-bg:   #f0eaff;
+
+  /* Ámbar */
+  --amber:       #c97a1a;
+  --amber-dark:  #9a5a0e;
+  --amber-light: #e8951f;
+  --amber-bg:    #fdf0e0;
 
   /* Status */
-  --fresh:      #2e7d44;
-  --fresh-bg:   #e0f4e6;
-  --fresh-txt:  #1a5c30;
+  --fresh:       #1c7a4a;  --fresh-bg:  #e4f4ec;  --fresh-txt: #0f5533;
+  --warn:        #c97a1a;  --warn-bg:   #fdf0e0;  --warn-txt:  #9a5a0e;
+  --danger:      #8c2218;  --danger-bg: #fde8e6;  --danger-txt:#701414;
+  --muted:       #a09880;  --muted-bg:  #f0ece4;  --muted-txt: #6b5f4a;
 
-  --warn:       #8c6b10;
-  --warn-bg:    #fdf3d8;
-  --warn-txt:   #6e500c;
+  /* Texto */
+  --ink-1: #1a1714;
+  --ink-2: #4a3f35;
+  --ink-3: #a09880;
 
-  --danger:     #8c2218;
-  --danger-bg:  #fde8e6;
-  --danger-txt: #701414;
+  /* Gradiente header */
+  --gradient-header: linear-gradient(145deg, #5b2da8 0%, #8b3fbd 40%, #1c7a4a 100%);
 
-  --muted:      #6b7280;
-  --muted-bg:   #f0f2f4;
-  --muted-txt:  #4b5563;
+  /* Tipografía */
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-body:    "Jost", system-ui, sans-serif;
+
+  /* Sombras */
+  --shadow-card: 0 1px 3px rgba(28,61,42,0.06), 0 4px 16px rgba(28,61,42,0.07);
+  --shadow-nav:  0 8px 32px rgba(28,61,42,0.16), 0 2px 8px rgba(0,0,0,0.07), 0 0 0 1px rgba(28,61,42,0.08);
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-
-  /* Shadows — tinted to brand green hue */
-  --shadow-card: 0 1px 2px rgba(26,74,40,0.05), 0 4px 16px rgba(26,74,40,0.07);
-  --shadow-card-hover: 0 2px 4px rgba(26,74,40,0.08), 0 8px 24px rgba(26,74,40,0.10);
-  --shadow-nav:  0 8px 32px rgba(26,74,40,0.14), 0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(26,74,40,0.07);
-  --shadow-bar:  0 -1px 0 rgba(26,74,40,0.06);
-  --shadow-btn:  0 1px 2px rgba(26,74,40,0.10);
 }
 
-/* ─── Force light mode — defeats Tailwind v4 dark Canvas reset ── */
+/* Force light mode */
 html {
   color-scheme: light !important;
-  background: #f2f7f3 !important;
+  background: #f5f2eb !important;
 }
 
-/* ─── Base ───────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
-  background: #f2f7f3 !important;
+  background: #f5f2eb !important;
   background: var(--bg) !important;
   color: var(--ink-1);
-  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif);
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -68,22 +71,28 @@ body {
 * { -webkit-tap-highlight-color: transparent; }
 ::-webkit-scrollbar { width: 0; height: 0; }
 
-/* ─── Animations ─────────────────────────────────── */
+.font-display { font-family: var(--font-display); }
+
+/* Animaciones */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes fadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
 
-.anim-card { animation: fadeUp 220ms var(--ease-out) both; }
-.anim-bar  { animation: fadeIn 180ms var(--ease-out) both; }
+.anim-card { animation: fadeUp 240ms var(--ease-out) both; }
+.anim-bar  { animation: fadeIn 200ms var(--ease-out) both; }
+.anim-scale { animation: scaleIn 200ms var(--ease-out) both; }
 
 @media (prefers-reduced-motion: reduce) {
-  .anim-card { animation: fadeIn 120ms ease both; }
-  .anim-bar  { animation: none; }
+  .anim-card, .anim-bar, .anim-scale { animation: fadeIn 120ms ease both; }
   *, *::before, *::after {
     transition-duration: 0.01ms !important;
     animation-duration:  0.01ms !important;

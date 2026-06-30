@@ -1,272 +1,329 @@
 "use client";
-import { useState, useRef } from "react";
-import { scanReceipt, scanFridge, addProduct } from "@/lib/api";
+import { useState, useRef, useEffect } from "react";
+import { scanImage, addProduct } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
+import { ScanCard } from "@/components/ScanCard";
 import { useRouter } from "next/navigation";
-import { Camera, CheckCircle, Circle, FloppyDisk, CircleNotch, ArrowCounterClockwise } from "@phosphor-icons/react";
+import {
+  CameraPlus, Microphone, CheckCircle, Circle,
+  FloppyDisk, CircleNotch, X, ArrowCounterClockwise,
+  WhatsappLogo, MapPin,
+} from "@phosphor-icons/react";
 
-type ScanMode = "receipt" | "fridge";
 type Item = { name: string; price?: number; quantity?: string };
+type InputMode = "photo" | "voice" | null;
+
+const RECYCLE_MAP: { keywords: string[]; bin: string }[] = [
+  { keywords: ["leche","yogur","jugo","tetra","caja"],  bin: "♻️ Tetra Pak → bolsa amarilla" },
+  { keywords: ["botella","gaseosa","agua","plástico"],   bin: "🔵 Plástico PET → tacho azul" },
+  { keywords: ["lata","atún","sardina","conserva"],      bin: "⚪ Metal/Lata → tacho gris" },
+  { keywords: ["vidrio","frasco","mermelada"],           bin: "🟢 Vidrio → tacho verde" },
+  { keywords: ["pan","fruta","verdura","carne","restos"],bin: "🟤 Orgánico → tacho marrón" },
+  { keywords: ["cartón","cereal","papel"],               bin: "📦 Cartón → tacho azul" },
+];
+
+function getRecycleTip(name: string): string | null {
+  const lower = name.toLowerCase();
+  for (const rule of RECYCLE_MAP) {
+    if (rule.keywords.some(k => lower.includes(k))) return rule.bin;
+  }
+  return null;
+}
 
 export default function ScanPage() {
-  const [mode,     setMode]     = useState<ScanMode>("receipt");
-  const [preview,  setPreview]  = useState<string | null>(null);
-  const [file,     setFile]     = useState<File | null>(null);
-  const [loading,  setLoading]  = useState(false);
-  const [detected, setDetected] = useState<Item[]>([]);
-  const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [phone,    setPhone]    = useState("");
-  const [done,     setDone]     = useState(false);
+  const [inputMode, setInputMode] = useState<InputMode>(null);
+  const [preview,   setPreview]   = useState<string | null>(null);
+  const [file,      setFile]      = useState<File | null>(null);
+  const [loading,   setLoading]   = useState(false);
+  const [detected,  setDetected]  = useState<Item[]>([]);
+  const [selected,  setSelected]  = useState<Set<number>>(new Set());
+  const [phone,     setPhone]     = useState("");
+  const [done,      setDone]      = useState(false);
+  const [listening, setListening] = useState(false);
+  const [transcript,setTranscript]= useState("");
+  const [voiceItems,setVoiceItems]= useState<string[]>([]);
+  const [recycleTip,setRecycleTip]= useState<string | null>(null);
+  const [stats,     setStats]     = useState({ scans: 0, week: 0, products: 0 });
+
   const inputRef = useRef<HTMLInputElement>(null);
+  const recogRef = useRef<any>(null);
   const router   = useRouter();
+
+  useEffect(() => {
+    const s = parseInt(localStorage.getItem("qr_scans") || "0");
+    const p = parseInt(localStorage.getItem("qr_products") || "0");
+    setStats({ scans: s, week: Math.min(s, 3), products: p });
+  }, []);
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
     setFile(f); setPreview(URL.createObjectURL(f));
-    setDetected([]); setSelected(new Set()); setDone(false);
+    setDetected([]); setSelected(new Set());
   }
 
   async function handleScan() {
     if (!file) return;
     setLoading(true);
     try {
-      const r = mode === "receipt"
-        ? await scanReceipt(file, phone || undefined)
-        : await scanFridge(file, phone || undefined);
+      const r = await scanImage(file, phone || undefined);
       const items: Item[] = (r.detected ?? []).map((name: string) => ({ name }));
       setDetected(items);
-      setSelected(new Set(items.map((_: Item, i: number) => i)));
-    } catch { alert("Error al escanear. Intenta de nuevo."); }
+      setSelected(new Set(items.map((_: any, i: number) => i)));
+      localStorage.setItem("qr_scans", String(stats.scans + 1));
+    } catch { alert("Error al escanear."); }
     setLoading(false);
   }
 
   async function handleSave() {
     setLoading(true);
-    for (const i of selected) {
-      const item = detected[i];
-      await addProduct(item.name, item.quantity ?? "1", item.price ?? 0, phone || undefined);
+    const items = inputMode === "voice"
+      ? voiceItems.map(n => ({ name: n, quantity: "1", price: 0 }))
+      : [...selected].map(i => ({ name: detected[i].name, quantity: detected[i].quantity ?? "1", price: detected[i].price ?? 0 }));
+    for (const item of items) {
+      await addProduct(item.name, item.quantity, item.price, phone || undefined);
     }
+    const prev = parseInt(localStorage.getItem("qr_products") || "0");
+    localStorage.setItem("qr_products", String(prev + items.length));
     setDone(true); setLoading(false);
-    setTimeout(() => router.push("/"), 1200);
+    setTimeout(() => router.push("/"), 1600);
+  }
+
+  function startVoice() {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { alert("Usa Chrome para reconocimiento de voz."); return; }
+    const recog = new SR();
+    recog.lang = "es-PE";
+    recog.continuous = true;
+    recog.interimResults = true;
+    recog.onresult = (e: any) => {
+      const t = Array.from(e.results).map((r: any) => r[0].transcript).join(" ");
+      setTranscript(t);
+    };
+    recog.onend = () => setListening(false);
+    recog.start();
+    recogRef.current = recog;
+    setListening(true);
+  }
+
+  function stopVoice() {
+    recogRef.current?.stop();
+    setListening(false);
+    if (transcript.trim()) {
+      const items = transcript.split(/[,\n·]+/).map(s => s.trim()).filter(Boolean);
+      setVoiceItems(items);
+      setTranscript("");
+    }
   }
 
   function reset() {
-    setPreview(null); setFile(null);
-    setDetected([]); setSelected(new Set()); setDone(false);
-    if (inputRef.current) inputRef.current.value = "";
+    setInputMode(null); setPreview(null); setFile(null);
+    setDetected([]); setSelected(new Set()); setVoiceItems([]); setTranscript("");
   }
 
   function toggleSel(i: number) {
-    setSelected((p) => { const n = new Set(p); n.has(i) ? n.delete(i) : n.add(i); return n; });
+    setSelected(p => { const n = new Set(p); n.has(i) ? n.delete(i) : n.add(i); return n; });
   }
 
   if (done) return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100dvh", gap: 12, background: "var(--bg)" }}>
-      <div style={{ width: 72, height: 72, background: "var(--fresh-bg)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 20px rgba(46,125,68,0.20)" }}>
-        <CheckCircle size={38} weight="fill" style={{ color: "var(--fresh)" }} />
+      <div style={{ width: 72, height: 72, background: "var(--brand-bg)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <CheckCircle size={38} weight="fill" style={{ color: "var(--brand)" }} />
       </div>
-      <p style={{ fontSize: 18, fontWeight: 800, color: "var(--ink-1)", letterSpacing: "-0.02em" }}>Guardado</p>
-      <p style={{ fontSize: 13, color: "var(--ink-3)" }}>Volviendo al inventario…</p>
+      <p style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 400, color: "var(--ink-1)" }}>
+        ¡<em style={{ fontStyle: "italic", color: "var(--violet)" }}>Guardado</em>!
+      </p>
+      <p style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--ink-3)" }}>Volviendo al inventario…</p>
     </div>
   );
 
   return (
-    <div style={{ paddingBottom: 100, background: "var(--bg)", minHeight: "100dvh" }}>
+    <div style={{ minHeight: "100dvh", background: "var(--bg)" }}>
+
+      {/* Toast reciclaje */}
+      {recycleTip && (
+        <div className="fixed left-0 right-0 max-w-md mx-auto px-4 anim-bar" style={{ top: 16, zIndex: 100 }}>
+          <div style={{ background: "#1a1714", borderRadius: 16, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "#fff", flex: 1 }}>{recycleTip}</span>
+            <button onClick={() => setRecycleTip(null)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", padding: 0 }}>
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
-      <div
-        className="px-5 pt-12 pb-5"
-        style={{ background: "linear-gradient(170deg, #1a4a28 0%, #153d22 100%)" }}
-      >
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em" }}>
-          Escanear
-        </h1>
-        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 3, fontWeight: 500 }}>
-          Ticket de compra o foto del refri
-        </p>
+      <div className="relative overflow-hidden px-6 pb-14 pt-5" style={{ background: "var(--gradient-header)" }}>
+        <div className="flex items-center justify-between mb-5">
+          {inputMode
+            ? <button onClick={reset} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.8)", cursor: "pointer" }}><ArrowCounterClockwise size={20} /></button>
+            : <div style={{ width: 28 }} />}
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <div style={{ width: 68, height: 68, borderRadius: "50%", background: "rgba(255,255,255,0.2)", border: "2.5px solid rgba(255,255,255,0.4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <CameraPlus size={30} style={{ color: "rgba(255,255,255,0.7)" }} />
+          </div>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 34, fontWeight: 300, color: "#fff", letterSpacing: "-0.3px", lineHeight: 1 }}>
+            Esc<em style={{ fontStyle: "italic", color: "rgba(255,255,255,0.75)" }}>anear</em>
+          </h1>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: 10, color: "rgba(255,255,255,0.5)", letterSpacing: "0.1em", display: "flex", alignItems: "center", gap: 4 }}>
+            <MapPin size={11} /> Tu inventario
+          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 22, marginTop: 8 }}>
+            {[{ n: String(stats.scans), l: "Escaneos" }, { n: String(stats.week), l: "Esta semana" }, { n: String(stats.products), l: "Productos" }].map((s, i, arr) => (
+              <div key={s.l} style={{ display: "flex", alignItems: "center", gap: 22 }}>
+                <div style={{ textAlign: "center" }}>
+                  <p style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 400, color: "#fff", lineHeight: 1 }}>{s.n}</p>
+                  <p style={{ fontFamily: "var(--font-body)", fontSize: 9, color: "rgba(255,255,255,0.45)", letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>{s.l}</p>
+                </div>
+                {i < arr.length - 1 && <div style={{ width: 1, height: 24, background: "rgba(255,255,255,0.15)" }} />}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ position: "absolute", bottom: -2, left: 0, right: 0, height: 28, background: "var(--bg)", borderRadius: "50% 50% 0 0 / 24px 24px 0 0" }} />
       </div>
 
-      <div style={{ padding: "16px 14px 0", display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Body */}
+      <div style={{ padding: "16px 16px 96px", display: "flex", flexDirection: "column", gap: 12 }}>
 
-        {/* Mode toggle */}
-        <div style={{
-          display: "flex",
-          background: "var(--surface)",
-          border: "1px solid var(--border-lo)",
-          borderRadius: 14,
-          padding: 4,
-          boxShadow: "var(--shadow-card)",
-          gap: 4,
-        }}>
-          {(["receipt", "fridge"] as ScanMode[]).map((m) => (
-            <button
-              key={m}
-              onClick={() => setMode(m)}
-              style={{
-                flex: 1,
-                fontSize: 13, fontWeight: 600,
-                padding: "9px 0",
-                borderRadius: 10,
-                border: "none",
-                background: mode === m ? "var(--brand)" : "transparent",
-                color: mode === m ? "#fff" : "var(--ink-3)",
-                cursor: "pointer",
-                transition: "all 180ms ease",
-              }}
-            >
-              {m === "receipt" ? "Ticket" : "Refri"}
-            </button>
-          ))}
-        </div>
+        {/* Selección modo */}
+        {!inputMode && (
+          <>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 400, color: "var(--ink-1)", padding: "0 2px" }}>
+              Añadir <em style={{ fontStyle: "italic", color: "var(--violet)" }}>productos</em>
+            </h2>
 
-        {/* Photo zone */}
-        <div
-          onClick={() => inputRef.current?.click()}
-          style={{
-            height: 200,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            background: "var(--surface)",
-            border: "2px dashed var(--border)",
-            borderRadius: 18,
-            overflow: "hidden",
-            cursor: "pointer",
-            transition: "border-color 150ms ease",
-            boxShadow: "var(--shadow-card)",
-            position: "relative",
-          }}
-          onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--brand-mid)")}
-          onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}
-        >
-          {preview ? (
-            <>
-              <img src={preview} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              <button
-                onClick={e => { e.stopPropagation(); reset(); }}
-                style={{
-                  position: "absolute", top: 10, right: 10,
-                  width: 32, height: 32,
-                  background: "rgba(0,0,0,0.55)",
-                  border: "none",
-                  borderRadius: 99,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: "#fff", cursor: "pointer",
-                }}
-              >
-                <ArrowCounterClockwise size={14} weight="bold" />
-              </button>
-            </>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: 24, textAlign: "center" }}>
-              <div style={{ width: 52, height: 52, background: "var(--brand-bg)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 12px rgba(26,74,40,0.12)" }}>
-                <Camera size={24} style={{ color: "var(--brand)" }} />
+            <ScanCard variant="violet" icon={<CameraPlus size={26} />} title="Foto o ticket" titleItalic="de compra" subtitle="La IA detecta productos automáticamente" rankNumber={1} size="large"
+              onClick={() => { setInputMode("photo"); setTimeout(() => inputRef.current?.click(), 100); }} />
+
+            <ScanCard variant="green" icon={<Microphone size={24} />} title="Dictado" titleItalic="por voz" subtitle="Nombra tus productos hablando" rankNumber={2} size="large"
+              onClick={() => setInputMode("voice")} />
+
+            <div style={{ display: "flex", gap: 8 }}>
+              {[{ label: "Buena luz", bg: "var(--violet-bg)", ico: "💡" }, { label: "Sin dobleces", bg: "var(--brand-bg)", ico: "📄" }, { label: "Completo", bg: "var(--amber-bg)", ico: "🔍" }].map(tip => (
+                <div key={tip.label} style={{ flex: 1, background: "var(--surface)", border: "1px solid var(--border-lo)", borderRadius: 16, padding: "10px 8px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center" }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 10, background: tip.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>{tip.ico}</div>
+                  <p style={{ fontFamily: "var(--font-body)", fontSize: 10, color: "var(--ink-3)" }}>{tip.label}</p>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ background: "var(--surface)", border: "1px solid var(--border-lo)", borderRadius: 18, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--brand-bg)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <WhatsappLogo size={18} style={{ color: "var(--brand)" }} />
               </div>
-              <div>
-                <p style={{ fontSize: 14, fontWeight: 700, color: "var(--ink-2)" }}>Subir foto</p>
-                <p style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>o tomar con la cámara</p>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontFamily: "var(--font-body)", fontSize: 9, fontWeight: 500, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 3 }}>
+                  WhatsApp <span style={{ fontSize: 8, background: "var(--brand-bg)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontWeight: 500, marginLeft: 4 }}>Opcional</span>
+                </p>
+                <input type="tel" placeholder="+51 999 999 999" value={phone} onChange={e => setPhone(e.target.value)}
+                  style={{ fontFamily: "var(--font-body)", width: "100%", fontSize: 14, fontWeight: 300, color: "var(--ink-1)", background: "none", border: "none", outline: "none" }} />
               </div>
             </div>
-          )}
-        </div>
-        <input ref={inputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
-
-        {/* Phone */}
-        <div style={{ background: "var(--surface)", border: "1px solid var(--border-lo)", borderRadius: 14, padding: "12px 16px", boxShadow: "var(--shadow-card)" }}>
-          <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 6 }}>
-            WhatsApp (opcional)
-          </label>
-          <input
-            type="tel" placeholder="+51 999 999 999"
-            value={phone} onChange={(e) => setPhone(e.target.value)}
-            style={{ width: "100%", fontSize: 14, color: "var(--ink-1)", background: "none", border: "none", outline: "none" }}
-          />
-        </div>
-
-        {/* Scan CTA */}
-        {file && detected.length === 0 && (
-          <button
-            onClick={handleScan} disabled={loading}
-            style={{
-              height: 54, width: "100%",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              fontSize: 15, fontWeight: 700,
-              color: "#fff",
-              background: loading ? "var(--brand-mid)" : "var(--brand)",
-              border: "none", borderRadius: 16,
-              cursor: loading ? "default" : "pointer",
-              boxShadow: "0 4px 16px rgba(26,74,40,0.25)",
-              transition: "transform 80ms ease, background 150ms ease",
-            }}
-            onMouseDown={e => !loading && (e.currentTarget.style.transform = "scale(0.98)")}
-            onMouseUp={e => (e.currentTarget.style.transform = "scale(1)")}
-            onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
-          >
-            {loading
-              ? <><CircleNotch size={18} className="animate-spin" /> Analizando…</>
-              : "Analizar foto"
-            }
-          </button>
+          </>
         )}
 
-        {/* Results */}
-        {detected.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)" }}>
-                {detected.length} detectado{detected.length !== 1 ? "s" : ""}
-              </p>
-              <button onClick={reset} style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-3)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                <ArrowCounterClockwise size={12} />
-                Nueva foto
+        {/* Modo FOTO */}
+        {inputMode === "photo" && (
+          <>
+            <input ref={inputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
+            {!preview ? (
+              <div onClick={() => inputRef.current?.click()} style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface)", border: "2px dashed var(--border)", borderRadius: 20, cursor: "pointer" }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
+                  <div style={{ width: 48, height: 48, background: "var(--violet-bg)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <CameraPlus size={22} style={{ color: "var(--violet)" }} />
+                  </div>
+                  <p style={{ fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 500, color: "var(--ink-2)" }}>Toca para subir foto</p>
+                </div>
+              </div>
+            ) : (
+              <div style={{ borderRadius: 20, overflow: "hidden", height: 200, position: "relative" }}>
+                <img src={preview} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <button onClick={() => { setPreview(null); setFile(null); setDetected([]); }} style={{ position: "absolute", top: 10, right: 10, background: "rgba(0,0,0,0.5)", border: "none", borderRadius: 99, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <X size={14} style={{ color: "#fff" }} />
+                </button>
+              </div>
+            )}
+
+            {file && detected.length === 0 && (
+              <button onClick={handleScan} disabled={loading} className="active:scale-[0.98]"
+                style={{ height: 52, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "var(--font-body)", fontSize: 15, fontWeight: 600, color: "#fff", background: "var(--gradient-header)", border: "none", borderRadius: 16, cursor: loading ? "default" : "pointer" }}>
+                {loading ? <><CircleNotch size={16} className="animate-spin" /> Analizando…</> : "Analizar foto"}
+              </button>
+            )}
+
+            {detected.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <p style={{ fontFamily: "var(--font-body)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)" }}>
+                  {detected.length} detectado{detected.length !== 1 ? "s" : ""}
+                </p>
+                {detected.map((item, i) => {
+                  const tip = getRecycleTip(item.name);
+                  return (
+                    <button key={i} onClick={() => toggleSel(i)}
+                      style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, cursor: "pointer", background: selected.has(i) ? "var(--violet-bg)" : "var(--surface)", border: selected.has(i) ? "1px solid var(--violet)" : "1px solid var(--border-lo)", opacity: selected.has(i) ? 1 : 0.55, transition: "all 150ms ease", textAlign: "left" }}>
+                      {selected.has(i) ? <CheckCircle size={18} weight="fill" style={{ color: "var(--violet)", flexShrink: 0 }} /> : <Circle size={18} style={{ color: "var(--ink-3)", flexShrink: 0 }} />}
+                      <span style={{ fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 500, color: "var(--ink-1)", flex: 1 }}>{item.name}</span>
+                      {tip && (
+                        <span onClick={e => { e.stopPropagation(); setRecycleTip(tip); }}
+                          style={{ fontSize: 11, background: "var(--border-lo)", borderRadius: 8, padding: "2px 8px", color: "var(--ink-3)", flexShrink: 0, cursor: "pointer" }}>♻️</span>
+                      )}
+                    </button>
+                  );
+                })}
+                <button onClick={handleSave} disabled={loading || selected.size === 0} className="active:scale-[0.98]"
+                  style={{ height: 52, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "var(--font-body)", fontSize: 15, fontWeight: 600, color: selected.size === 0 ? "var(--ink-3)" : "#fff", background: selected.size === 0 ? "var(--surface)" : "var(--gradient-header)", border: "1px solid var(--border-lo)", borderRadius: 16, marginTop: 4, cursor: selected.size === 0 ? "default" : "pointer" }}>
+                  {loading ? <><CircleNotch size={16} className="animate-spin" /> Guardando…</> : <><FloppyDisk size={16} /> Guardar {selected.size} producto{selected.size !== 1 ? "s" : ""}</>}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Modo VOZ */}
+        {inputMode === "voice" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <p style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 400, color: "var(--ink-1)" }}>
+              Dicta tus <em style={{ fontStyle: "italic", color: "var(--violet)" }}>productos</em>
+            </p>
+            <p style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--ink-3)", lineHeight: 1.5 }}>
+              Habla con naturalidad: <em>"leche, pan, yogur, manzanas"</em>
+            </p>
+            <div style={{ display: "flex", justifyContent: "center", padding: "20px 0" }}>
+              <button onClick={listening ? stopVoice : startVoice}
+                style={{ width: 100, height: 100, borderRadius: "50%", border: "none", cursor: "pointer", background: listening ? "linear-gradient(145deg, #5b2da8, #1c7a4a)" : "var(--brand-bg)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: listening ? "0 0 0 14px rgba(91,45,168,0.12)" : "none", transition: "all 200ms ease" }}>
+                <Microphone size={40} style={{ color: listening ? "#fff" : "var(--brand)" }} weight={listening ? "fill" : "regular"} />
               </button>
             </div>
-            {detected.map((item, i) => (
-              <button
-                key={i} onClick={() => toggleSel(i)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  padding: "13px 14px", borderRadius: 14, cursor: "pointer",
-                  background: selected.has(i) ? "var(--brand-bg)" : "var(--surface)",
-                  border: selected.has(i) ? "1px solid var(--brand)" : "1px solid var(--border-lo)",
-                  boxShadow: selected.has(i) ? "none" : "var(--shadow-card)",
-                  opacity: selected.has(i) ? 1 : 0.55,
-                  transition: "all 150ms ease",
-                  textAlign: "left",
-                }}
-              >
-                {selected.has(i)
-                  ? <CheckCircle size={18} weight="fill" style={{ color: "var(--brand)", flexShrink: 0 }} />
-                  : <Circle size={18} style={{ color: "var(--ink-3)", flexShrink: 0 }} />
-                }
-                <span style={{ fontSize: 14, fontWeight: 600, color: "var(--ink-1)", flex: 1 }}>{item.name}</span>
-                {item.price != null && item.price > 0 && (
-                  <span style={{ fontSize: 12, color: "var(--ink-3)", fontVariantNumeric: "tabular-nums" }}>S/ {item.price}</span>
-                )}
-              </button>
-            ))}
-            <button
-              onClick={handleSave} disabled={loading || selected.size === 0}
-              style={{
-                height: 54, width: "100%",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                fontSize: 15, fontWeight: 700,
-                color: selected.size === 0 ? "var(--ink-3)" : "#fff",
-                background: selected.size === 0 ? "var(--surface)" : "var(--brand)",
-                border: "1px solid var(--border-lo)",
-                borderRadius: 16, marginTop: 4,
-                opacity: loading ? 0.7 : 1,
-                boxShadow: selected.size > 0 ? "0 4px 16px rgba(26,74,40,0.25)" : "none",
-                transition: "all 150ms ease",
-                cursor: selected.size === 0 ? "default" : "pointer",
-              }}
-              onMouseDown={e => selected.size > 0 && !loading && (e.currentTarget.style.transform = "scale(0.98)")}
-              onMouseUp={e => (e.currentTarget.style.transform = "scale(1)")}
-              onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
-            >
-              {loading
-                ? <><CircleNotch size={16} className="animate-spin" /> Guardando…</>
-                : <><FloppyDisk size={16} /> Guardar {selected.size > 0 ? `${selected.size} producto${selected.size !== 1 ? "s" : ""}` : ""}</>
-              }
-            </button>
+            <p style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--ink-3)", textAlign: "center" }}>
+              {listening ? "Toca para detener" : "Toca para hablar"}
+            </p>
+            {listening && transcript && (
+              <div style={{ background: "var(--surface)", border: "1px solid var(--border-lo)", borderRadius: 16, padding: "12px 16px" }}>
+                <p style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--ink-3)", fontStyle: "italic" }}>{transcript}</p>
+              </div>
+            )}
+            {voiceItems.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <p style={{ fontFamily: "var(--font-body)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)" }}>
+                  {voiceItems.length} producto{voiceItems.length !== 1 ? "s" : ""} detectado{voiceItems.length !== 1 ? "s" : ""}
+                </p>
+                {voiceItems.map((name, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, background: "var(--brand-bg)", border: "1px solid var(--brand-mid)" }}>
+                    <CheckCircle size={18} weight="fill" style={{ color: "var(--brand)", flexShrink: 0 }} />
+                    <span style={{ fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 500, color: "var(--ink-1)", flex: 1 }}>{name}</span>
+                    <button onClick={() => setVoiceItems(v => v.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", padding: 0 }}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+                <button onClick={handleSave} disabled={loading} className="active:scale-[0.98]"
+                  style={{ height: 52, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "var(--font-body)", fontSize: 15, fontWeight: 600, color: "#fff", background: "var(--gradient-header)", border: "none", borderRadius: 16, marginTop: 4, cursor: "pointer" }}>
+                  {loading ? <><CircleNotch size={16} className="animate-spin" /> Guardando…</> : <><FloppyDisk size={16} /> Guardar {voiceItems.length} producto{voiceItems.length !== 1 ? "s" : ""}</>}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
