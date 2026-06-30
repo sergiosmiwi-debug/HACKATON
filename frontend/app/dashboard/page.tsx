@@ -4,14 +4,6 @@ import { getDashboard, resetWaste, removeWasteEntry } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
 import { Leaf, Warning, ArrowCounterClockwise, ChartBar, X, ListBullets } from "@phosphor-icons/react";
 
-type Period = "today" | "week" | "month" | "all";
-const PERIODS: { key: Period; label: string }[] = [
-  { key: "today", label: "Hoy"    },
-  { key: "week",  label: "Semana" },
-  { key: "month", label: "Mes"    },
-  { key: "all",   label: "Todo"   },
-];
-
 function StatusBar({ data }: { data: any }) {
   const total = data.total_products ?? 0;
   if (!total) return null;
@@ -48,21 +40,19 @@ function StatusBar({ data }: { data: any }) {
 
 export default function DashboardPage() {
   const [data, setData]         = useState<any>(null);
-  const [period, setPeriod]     = useState<Period>("week");
   const [resetting, setResetting] = useState(false);
   const [showList, setShowList] = useState(false);
   const [removingId, setRemovingId] = useState<number | null>(null);
 
   useEffect(() => {
-    setData(null);
-    getDashboard(period).then(setData);
-  }, [period]);
+    getDashboard("all").then(setData);
+  }, []);
 
   async function handleReset() {
-    if (!confirm("¿Reiniciar el contador de desperdicio para este período?")) return;
+    if (!confirm("¿Reiniciar el contador de desperdicio?")) return;
     setResetting(true);
     await resetWaste();
-    const fresh = await getDashboard(period);
+    const fresh = await getDashboard("all");
     setData(fresh);
     setResetting(false);
   }
@@ -70,12 +60,10 @@ export default function DashboardPage() {
   async function handleRemoveEntry(id: number) {
     setRemovingId(id);
     await removeWasteEntry(id);
-    const fresh = await getDashboard(period);
+    const fresh = await getDashboard("all");
     setData(fresh);
     setRemovingId(null);
   }
-
-  const periodLabel = period === "today" ? "hoy" : period === "week" ? "esta semana" : period === "month" ? "este mes" : "historial completo";
 
   return (
     <div style={{ paddingBottom: 96 }}>
@@ -96,19 +84,6 @@ export default function DashboardPage() {
       </div>
 
       <div style={{ padding: "12px 16px 0", display: "flex", flexDirection: "column", gap: 12 }}>
-        {/* Filtro período */}
-        <div style={{ display: "flex", background: "var(--border-lo)", borderRadius: 14, padding: 3, gap: 3 }}>
-          {PERIODS.map(({ key, label }) => {
-            const active = period === key;
-            return (
-              <button key={key} onClick={() => setPeriod(key)}
-                style={{ flex: 1, height: 36, border: "none", borderRadius: 11, fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 180ms ease", background: active ? "var(--brand)" : "transparent", color: active ? "#fff" : "var(--ink-3)" }}>
-                {label}
-              </button>
-            );
-          })}
-        </div>
-
         {!data ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {[100, 80, 120].map((h, i) => (
@@ -121,7 +96,7 @@ export default function DashboardPage() {
             <div className="anim-card" style={{ background: "var(--surface)", border: "1px solid var(--border-lo)", borderRadius: 20, padding: 20, boxShadow: "var(--shadow-card)" }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
                 <p style={{ fontFamily: "var(--font-body)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)" }}>
-                  Desperdicio · {periodLabel}
+                  Desperdicio total
                 </p>
                 <button onClick={handleReset} disabled={resetting}
                   style={{ display: "flex", alignItems: "center", gap: 4, fontFamily: "var(--font-body)", fontSize: 10, fontWeight: 600, color: "var(--ink-3)", background: "var(--bg)", border: "1px solid var(--border-lo)", borderRadius: 8, padding: "3px 8px", cursor: "pointer", opacity: resetting ? 0.5 : 1 }}>
@@ -159,14 +134,6 @@ export default function DashboardPage() {
                       </button>
                     </div>
                   ))}
-                </div>
-              )}
-
-              {data.total_wasted > 0 && period !== "all" && (
-                <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--border-lo)" }}>
-                  <p style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--warn-txt)" }}>
-                    Proyección mensual: <strong>S/ {(data.total_wasted * (period === "today" ? 30 : period === "week" ? 4 : 1)).toFixed(2)}</strong>
-                  </p>
                 </div>
               )}
             </div>
