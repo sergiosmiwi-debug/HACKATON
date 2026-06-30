@@ -7,7 +7,7 @@ export const MATERIAL_BINS: Record<string, BinRule> = {
   metal:    { bin: "Metal/Lata (reciclable)", color: "#1c7a4a", tip: "🟢 Metal/Lata → bolsa verde de reciclables" },
   carton:   { bin: "Cartón/Papel",          color: "#9a6b2c", tip: "📦 Cartón/Papel → aparte, en caja o atado (no en bolsa)" },
   papel:    { bin: "Cartón/Papel",          color: "#9a6b2c", tip: "📦 Papel → aparte, en caja o atado (no en bolsa)" },
-  organico: { bin: "Orgánico",              color: "#7c4f1c", tip: "🟤 Orgánico → compost si tienes, si no, bolsa negra" },
+  organico: { bin: "Orgánico",              color: "#2b2b2b", tip: "⚫ Orgánico → bolsa negra (o compost si tienes)" },
   general:  { bin: "General",               color: "#2b2b2b", tip: "⚫ No reciclable → bolsa negra de residuos generales" },
 };
 
