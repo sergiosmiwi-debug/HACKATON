@@ -4,7 +4,7 @@ import re
 import base64
 from groq import Groq
 
-MODEL = "meta-llama/llama-4-maverick-17b-128e-instruct"
+MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 _client = None
 
 def init_gemini():
