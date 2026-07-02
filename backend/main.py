@@ -126,9 +126,9 @@ async def scan_fridge_endpoint(
 
 @app.get("/products")
 def get_products(db: Session = Depends(get_db), did: Optional[str] = Depends(get_device)):
-    q = db.query(Product).filter(Product.status != "discarded")
-    if did:
-        q = q.filter(Product.device_id == did)
+    if not did:
+        return []
+    q = db.query(Product).filter(Product.status != "discarded").filter(Product.device_id == did)
     products = q.all()
     result = []
     for p in products:

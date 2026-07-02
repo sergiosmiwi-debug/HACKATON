@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getProducts, markOpened, consumeProduct, discardProduct, setProductMaterial } from "@/lib/api";
 import ProductCard from "@/components/ProductCard";
 import BottomNav from "@/components/BottomNav";
-import { ArrowClockwise, CheckSquare, X, Trash, Leaf, BellSlash, SpeakerSimpleHigh, SpeakerSimpleSlash } from "@phosphor-icons/react";
+import { ArrowClockwise, CheckSquare, X, Trash, Leaf, BellSlash } from "@phosphor-icons/react";
 import { requestNotificationPermission, checkExpiringAndNotify, canNotify } from "@/lib/notifications";
 
 type Product = {
@@ -36,9 +36,6 @@ export default function Home() {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [loadKey, setLoadKey]   = useState(0);
   const [notifGranted, setNotifGranted] = useState(false);
-  const [musicMuted, setMusicMuted] = useState(false);
-  const [musicReady, setMusicReady] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -54,32 +51,6 @@ export default function Home() {
     if (canNotify()) setNotifGranted(Notification.permission === "granted");
   }, []);
 
-  useEffect(() => {
-    fetch("/ambient.mp3", { method: "HEAD" }).then(r => {
-      if (!r.ok) return;
-      const audio = new Audio("/ambient.mp3");
-      audio.loop = true;
-      audio.volume = 0.08;
-      audioRef.current = audio;
-      setMusicReady(true);
-      // Intenta reproducir automáticamente; si el navegador lo bloquea, el usuario puede activarlo manualmente
-      audio.play().catch(() => {});
-    }).catch(() => {});
-    return () => { audioRef.current?.pause(); };
-  }, []);
-
-  function toggleMute() {
-    const a = audioRef.current;
-    if (!a) return;
-    if (musicMuted) {
-      a.volume = 0.08;
-      a.play().catch(() => {});
-      setMusicMuted(false);
-    } else {
-      a.volume = 0;
-      setMusicMuted(true);
-    }
-  }
 
   async function handleEnableNotifs() {
     const granted = await requestNotificationPermission();
@@ -123,12 +94,6 @@ export default function Home() {
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {!selectMode ? (
               <>
-                {musicReady && (
-                  <button onClick={toggleMute} className="active:scale-[0.95]" title={musicMuted ? "Activar música" : "Silenciar música"}
-                    style={{ width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", background: "rgba(255,255,255,0.15)", borderRadius: 10, border: "none", cursor: "pointer" }}>
-                    {musicMuted ? <SpeakerSimpleSlash size={15} /> : <SpeakerSimpleHigh size={15} />}
-                  </button>
-                )}
                 {canNotify() && !notifGranted && (
                   <button onClick={handleEnableNotifs} className="active:scale-[0.95]" title="Activar notificaciones de vencimiento"
                     style={{ width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", background: "rgba(255,255,255,0.15)", borderRadius: 10, border: "none", cursor: "pointer" }}>
@@ -136,9 +101,9 @@ export default function Home() {
                   </button>
                 )}
                 {visible.length > 0 && (
-                  <button onClick={() => setSel(true)} className="active:scale-[0.95]"
-                    style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-body)", fontSize: 11, fontWeight: 600, color: "#fff", background: "rgba(255,255,255,0.15)", borderRadius: 10, padding: "6px 10px", border: "none", cursor: "pointer" }}>
-                    <CheckSquare size={13} /> Seleccionar
+                  <button onClick={() => setSel(true)} className="active:scale-[0.95]" title="Seleccionar productos"
+                    style={{ width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", background: "rgba(255,255,255,0.15)", borderRadius: 10, border: "none", cursor: "pointer" }}>
+                    <CheckSquare size={15} />
                   </button>
                 )}
                 <button onClick={load} className="active:scale-[0.95]"
