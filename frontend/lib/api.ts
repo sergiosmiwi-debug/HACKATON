@@ -81,11 +81,14 @@ export async function discardProduct(id: number) {
   return res.json();
 }
 
-export async function scanImage(file: File) {
+export async function scanImage(file: File, mode: "receipt" | "fridge" = "receipt") {
   const form = new FormData();
   form.append("file", file);
-  form.append("device_id", getDeviceId());
-  const res = await fetch(`${API}/scan/receipt`, { method: "POST", body: form });
+  const res = await fetch(`${API}/scan/${mode}`, {
+    method: "POST",
+    headers: { "X-Device-Id": getDeviceId() },
+    body: form,
+  });
   return res.json();
 }
 
