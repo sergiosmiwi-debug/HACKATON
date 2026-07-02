@@ -14,7 +14,13 @@ export const MATERIAL_BINS: Record<string, BinRule> = {
 const UNKNOWN_BIN: BinRule = { bin: "Sin identificar", color: "#b7b0a2", tip: "No se identificó el empaque — revisa el envase" };
 
 // Solo para casos obvios donde el alimento no lleva empaque (frutas/verduras sueltas, pan suelto)
-const OBVIOUS_ORGANIC = ["fruta","verdura","pan","carne","pollo","pescado","huevo","tomate","plátano","papa","cebolla","choclo","palta"];
+const OBVIOUS_ORGANIC = [
+  "fruta","verdura","pan","carne","pollo","pescado","huevo",
+  "tomate","plátano","platano","banana","papa","cebolla","choclo","palta",
+  "manzana","naranja","mandarina","uva","pera","durazno","fresa","piña","pina",
+  "sandia","sandía","melon","melón","limon","limón","zanahoria","lechuga",
+  "pepino","brócoli","brocoli","espinaca","acelga","apio","betarraga","camote",
+];
 
 export function getBin(material: string | null | undefined, name?: string) {
   if (material && MATERIAL_BINS[material]) return MATERIAL_BINS[material];

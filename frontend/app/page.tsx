@@ -147,6 +147,21 @@ export default function Home() {
         <div style={{ position: "absolute", bottom: -2, left: 0, right: 0, height: 28, background: "var(--bg)", borderRadius: "50% 50% 0 0 / 24px 24px 0 0" }} />
       </div>
 
+      {/* Leyenda de colores */}
+      <div style={{ padding: "10px 16px 4px", display: "flex", gap: 12, flexWrap: "wrap" }}>
+        {[
+          { color: "#1c7a4a", label: "Bolsa verde · reciclables" },
+          { color: "#9a6b2c", label: "Caja · cartón/papel" },
+          { color: "#2b2b2b", label: "Bolsa negra · generales" },
+          { color: "#b7b0a2", label: "Sin identificar" },
+        ].map(({ color, label }) => (
+          <div key={label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <div style={{ width: 10, height: 10, borderRadius: 3, background: color, flexShrink: 0 }} />
+            <span style={{ fontFamily: "var(--font-body)", fontSize: 10, color: "var(--ink-3)", fontWeight: 500 }}>{label}</span>
+          </div>
+        ))}
+      </div>
+
       {/* Lista */}
       <div style={{ padding: "12px 16px 0" }}>
         {loading ? (

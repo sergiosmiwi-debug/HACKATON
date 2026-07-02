@@ -30,7 +30,9 @@ const S = {
 export default function ProductCard({ product, onOpen, onConsume, onDiscard, onSetMaterial, selectMode, selected, onSelect }: Props) {
   const s = S[product.status as keyof typeof S] ?? S.expired;
   const bin = getBin(product.material, product.name);
-  const showOpenButton = product.changes_on_open && !product.opened_date;
+  // Orgánicos no tienen estado "sellado" — su vida útil corre desde el primer día
+  const isOrganic = bin.bin === MATERIAL_BINS.organico.bin;
+  const showOpenButton = product.changes_on_open && !product.opened_date && !isOrganic;
   const needsMaterial = !product.material && bin.bin === "Sin identificar";
 
   const num  = product.days_left === null ? "–" : product.days_left < 0 ? "!" : product.days_left > 99 ? "99+" : String(product.days_left);
@@ -51,7 +53,7 @@ export default function ProductCard({ product, onOpen, onConsume, onDiscard, onS
       }}
     >
       <div title={`Va a: ${bin.bin}`} style={{
-        position: "absolute", top: 0, right: 0, width: 38, height: 38, zIndex: 1,
+        position: "absolute", top: 0, right: 0, width: 54, height: 54, zIndex: 1,
         background: bin.color,
         clipPath: "polygon(100% 0, 100% 100%, 0 0)",
         opacity: 0.92,
