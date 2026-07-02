@@ -59,12 +59,34 @@ def _is_valid_food_item(name: str) -> bool:
     return True
 
 PERU_SPANISH_NOTE = """
-IMPORTANTE - usa español de Perú, no de México ni otro país:
-- "elote" → di "choclo"
-- "aguacate" → di "palta"
-- "durazno" → está bien, también se usa "melocotón"
-- "papaya", "plátano", "camote" tal cual (no "batata")
-- "frijoles" → di "frejoles" o "menestras"
+IMPORTANTE - usa nombres en español peruano, no en italiano, inglés ni de otros países:
+- "elote" → "choclo"
+- "aguacate" → "palta"
+- "batata" / "boniato" → "camote"
+- "frijoles" / "porotos" → "frejoles"
+- "basilico" / "basil" / "albahaca italiana" → "albahaca"
+- "cilantro" / "coriander" → "culantro"
+- "zucchini" / "zuchinni" / "zucchetti" → "zapallito italiano" o "calabacín"
+- "spinach" → "espinaca"
+- "broccoli" → "brócoli"
+- "blueberry" → "arándano"
+- "strawberry" → "fresa"
+- "pineapple" → "piña"
+- "avocado" → "palta"
+- "corn" → "choclo"
+- "potato" → "papa"
+- "onion" → "cebolla"
+- "garlic" → "ajo"
+- "ginger" → "jengibre"
+- "tomato" → "tomate"
+- "chicken" → "pollo"
+- "beef" / "meat" → "carne"
+- "fish" → "pescado"
+- "milk" → "leche"
+- "butter" → "mantequilla"
+- "cheese" → "queso"
+- "egg" / "eggs" → "huevos"
+Nunca uses nombres en italiano, inglés, francés ni portugués. Siempre en español peruano.
 """
 
 MATERIAL_NOTE = """

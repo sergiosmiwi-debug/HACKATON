@@ -1,4 +1,9 @@
 from datetime import datetime, timedelta
+import unicodedata
+
+def _norm(s: str) -> str:
+    """Quita tildes y pasa a minúsculas para comparaciones flexibles."""
+    return unicodedata.normalize("NFD", s).encode("ascii", "ignore").decode("ascii").lower()
 
 SHELF_LIFE = {
     # Lácteos
@@ -45,8 +50,20 @@ SHELF_LIFE = {
     "espinaca": {"closed": 4, "opened": 4},
     "camote": {"closed": 21, "opened": 21},
     "betarraga": {"closed": 14, "opened": 14},
+    # Hierbas y especias frescas
+    "albahaca": {"closed": 5, "opened": 5},
+    "perejil": {"closed": 7, "opened": 7},
+    "culantro": {"closed": 5, "opened": 5},
+    "cilantro": {"closed": 5, "opened": 5},
+    "hierbabuena": {"closed": 7, "opened": 7},
+    "hierba buena": {"closed": 7, "opened": 7},
+    "oregano": {"closed": 7, "opened": 7},
+    "orégano": {"closed": 7, "opened": 7},
+    "ajo": {"closed": 60, "opened": 14},
+    "jengibre": {"closed": 21, "opened": 21},
     # Panadería
     "pan": {"closed": 5, "opened": 3},
+    "tortilla": {"closed": 7, "opened": 5},
     # Bebidas
     "jugo": {"closed": 14, "opened": 5},
     "nectar": {"closed": 180, "opened": 5},
@@ -57,7 +74,7 @@ SHELF_LIFE = {
     "vino": {"closed": 365, "opened": 5},
     "agua": {"closed": 730, "opened": 3},
     # Aceites y condimentos — duran meses una vez abiertos
-    "aceite": {"closed": 365, "opened": 60},
+    "aceite": {"closed": 540, "opened": 120},  # aceite vegetal: 18m cerrado, 4m abierto
     "vinagre": {"closed": 730, "opened": 365},
     "ketchup": {"closed": 365, "opened": 30},
     "mayonesa": {"closed": 90, "opened": 30},
@@ -94,9 +111,11 @@ SHELF_LIFE = {
 }
 
 def get_shelf_life(product_name: str, opened: bool = False) -> int:
-    name_lower = product_name.lower()
+    name_norm = _norm(product_name)
     for key in SHELF_LIFE:
-        if key in name_lower:
+        if key == "default":
+            continue
+        if _norm(key) in name_norm:
             return SHELF_LIFE[key]["opened" if opened else "closed"]
     return SHELF_LIFE["default"]["opened" if opened else "closed"]
 

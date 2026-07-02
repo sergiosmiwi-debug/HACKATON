@@ -20,6 +20,8 @@ const OBVIOUS_ORGANIC = [
   "manzana","naranja","mandarina","uva","pera","durazno","fresa","piña","pina",
   "sandia","sandía","melon","melón","limon","limón","zanahoria","lechuga",
   "pepino","brócoli","brocoli","espinaca","acelga","apio","betarraga","camote",
+  "albahaca","culantro","cilantro","perejil","hierbabuena","orégano","oregano",
+  "ajo","jengibre","zapallito","arándano","arandano",
 ];
 
 export function getBin(material: string | null | undefined, name?: string) {
