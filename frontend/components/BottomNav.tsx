@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Package, Scan, ChartBar } from "@phosphor-icons/react";
+import { Package, Scan, ChartBar, MapPin } from "@phosphor-icons/react";
 
 const LINKS = [
-  { href: "/",          label: "Inventario", Icon: Package  },
-  { href: "/scan",      label: "Escanear",   Icon: Scan     },
-  { href: "/dashboard", label: "Resumen",    Icon: ChartBar },
+  { href: "/",            label: "Inventario", Icon: Package  },
+  { href: "/scan",        label: "Escanear",   Icon: Scan     },
+  { href: "/ecopuntos",   label: "Ecopuntos",  Icon: MapPin   },
+  { href: "/dashboard",   label: "Resumen",    Icon: ChartBar },
 ];
 
 export default function BottomNav() {

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { getDashboard, resetWaste, removeWasteEntry } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
 import { Leaf, Warning, ArrowCounterClockwise, ChartBar, X, ListBullets } from "@phosphor-icons/react";
+import MusicButton from "@/components/MusicButton";
 
 function StatusBar({ data }: { data: any }) {
   const total = data.total_products ?? 0;
@@ -76,8 +77,11 @@ export default function DashboardPage() {
             </h1>
             <p style={{ fontFamily: "var(--font-body)", fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 3, letterSpacing: "0.06em" }}>Tu resumen de desperdicio</p>
           </div>
-          <div style={{ width: 40, height: 40, background: "rgba(255,255,255,0.15)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <MusicButton />
+            <div style={{ width: 40, height: 40, background: "rgba(255,255,255,0.15)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <ChartBar size={18} style={{ color: "#fff" }} weight="fill" />
+            </div>
           </div>
         </div>
         <div style={{ position: "absolute", bottom: -2, left: 0, right: 0, height: 28, background: "var(--bg)", borderRadius: "50% 50% 0 0 / 24px 24px 0 0" }} />

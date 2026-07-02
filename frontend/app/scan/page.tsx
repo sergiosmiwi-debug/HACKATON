@@ -9,6 +9,7 @@ import {
   CameraPlus, Microphone, CheckCircle, Circle,
   FloppyDisk, CircleNotch, X, ArrowCounterClockwise, MapPin,
 } from "@phosphor-icons/react";
+import MusicButton from "@/components/MusicButton";
 
 type Item = { name: string; price?: number; quantity?: string };
 type VoiceItem = { name: string; quantity: string; material: string | null };
@@ -189,6 +190,7 @@ export default function ScanPage() {
           {inputMode
             ? <button onClick={reset} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.8)", cursor: "pointer" }}><ArrowCounterClockwise size={20} /></button>
             : <div style={{ width: 28 }} />}
+          <MusicButton />
         </div>
         <div className="flex flex-col items-center gap-2">
           <div style={{ width: 68, height: 68, borderRadius: "50%", background: "rgba(255,255,255,0.2)", border: "2.5px solid rgba(255,255,255,0.4)", display: "flex", alignItems: "center", justifyContent: "center" }}>

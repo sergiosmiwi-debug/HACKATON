@@ -5,6 +5,7 @@ import ProductCard from "@/components/ProductCard";
 import BottomNav from "@/components/BottomNav";
 import { ArrowClockwise, CheckSquare, X, Trash, Leaf, BellSlash } from "@phosphor-icons/react";
 import { requestNotificationPermission, checkExpiringAndNotify, canNotify } from "@/lib/notifications";
+import MusicButton from "@/components/MusicButton";
 
 type Product = {
   id: number; name: string; category: string; quantity: string;
@@ -94,6 +95,7 @@ export default function Home() {
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {!selectMode ? (
               <>
+                <MusicButton />
                 {canNotify() && !notifGranted && (
                   <button onClick={handleEnableNotifs} className="active:scale-[0.95]" title="Activar notificaciones de vencimiento"
                     style={{ width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", background: "rgba(255,255,255,0.15)", borderRadius: 10, border: "none", cursor: "pointer" }}>
