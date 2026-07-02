@@ -115,6 +115,7 @@ def get_products(db: Session = Depends(get_db), did: Optional[str] = Depends(get
             "purchase_price": p.purchase_price,
             "opened_date": p.opened_date.isoformat() if p.opened_date else None,
             "changes_on_open": closed_life != opened_life,
+            "opened_life_days": opened_life,
             "material": p.material,
         })
     db.commit()
