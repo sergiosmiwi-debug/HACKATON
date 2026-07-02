@@ -65,6 +65,7 @@ IMPORTANTE - usa nombres en español peruano, no en italiano, inglés ni de otro
 - "batata" / "boniato" → "camote"
 - "frijoles" / "porotos" → "frejoles"
 - "basilico" / "basil" / "albahaca italiana" → "albahaca"
+- "banano" / "banana" → "plátano"
 - "cilantro" / "coriander" → "culantro"
 - "zucchini" / "zuchinni" / "zucchetti" → "zapallito italiano" o "calabacín"
 - "spinach" → "espinaca"

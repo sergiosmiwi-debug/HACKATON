@@ -16,7 +16,7 @@ const UNKNOWN_BIN: BinRule = { bin: "Sin identificar", color: "#b7b0a2", tip: "N
 // Solo para casos obvios donde el alimento no lleva empaque (frutas/verduras sueltas, pan suelto)
 const OBVIOUS_ORGANIC = [
   "fruta","verdura","pan","carne","pollo","pescado","huevo",
-  "tomate","plátano","platano","banana","papa","cebolla","choclo","palta",
+  "tomate","plátano","platano","banana","banano","papa","cebolla","choclo","palta",
   "manzana","naranja","mandarina","uva","pera","durazno","fresa","piña","pina",
   "sandia","sandía","melon","melón","limon","limón","zanahoria","lechuga",
   "pepino","brócoli","brocoli","espinaca","acelga","apio","betarraga","camote",

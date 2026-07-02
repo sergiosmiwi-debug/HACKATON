@@ -31,6 +31,7 @@ SHELF_LIFE = {
     "mandarina": {"closed": 10, "opened": 10},
     "platano": {"closed": 5, "opened": 5},
     "banana": {"closed": 5, "opened": 5},
+    "banano": {"closed": 5, "opened": 5},
     "palta": {"closed": 4, "opened": 4},
     "uva": {"closed": 7, "opened": 7},
     "pera": {"closed": 10, "opened": 10},
