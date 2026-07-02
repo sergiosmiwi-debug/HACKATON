@@ -40,21 +40,20 @@ export default function AmbientPlayer() {
       onClick={toggle}
       title={muted ? "Activar música" : "Silenciar música"}
       style={{
-        position: "fixed", bottom: 88, right: 16, zIndex: 40,
-        width: 36, height: 36,
-        background: "var(--surface)",
-        border: "1px solid var(--border-lo)",
+        position: "fixed", top: 14, right: 16, zIndex: 50,
+        width: 34, height: 34,
+        background: "rgba(255,255,255,0.15)",
+        border: "none",
         borderRadius: 10,
         display: "flex", alignItems: "center", justifyContent: "center",
-        color: muted ? "var(--ink-3)" : "var(--brand)",
-        boxShadow: "var(--shadow-card)",
+        color: "#fff",
         cursor: "pointer",
-        transition: "all 200ms ease",
+        transition: "opacity 200ms ease",
       }}
     >
       {muted
-        ? <SpeakerSimpleSlash size={15} weight="fill" />
-        : <SpeakerSimpleHigh size={15} weight="fill" />}
+        ? <SpeakerSimpleSlash size={15} />
+        : <SpeakerSimpleHigh size={15} />}
     </button>
   );
 }
