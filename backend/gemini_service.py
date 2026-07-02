@@ -59,35 +59,64 @@ def _is_valid_food_item(name: str) -> bool:
     return True
 
 PERU_SPANISH_NOTE = """
-IMPORTANTE - usa nombres en español peruano, no en italiano, inglés ni de otros países:
-- "elote" → "choclo"
-- "aguacate" → "palta"
-- "batata" / "boniato" → "camote"
-- "frijoles" / "porotos" → "frejoles"
-- "basilico" / "basil" / "albahaca italiana" → "albahaca"
-- "banano" / "banana" → "plátano"
-- "cilantro" / "coriander" → "culantro"
-- "zucchini" / "zuchinni" / "zucchetti" → "zapallito italiano" o "calabacín"
-- "spinach" → "espinaca"
-- "broccoli" → "brócoli"
-- "blueberry" → "arándano"
-- "strawberry" → "fresa"
-- "pineapple" → "piña"
-- "avocado" → "palta"
-- "corn" → "choclo"
-- "potato" → "papa"
-- "onion" → "cebolla"
-- "garlic" → "ajo"
-- "ginger" → "jengibre"
-- "tomato" → "tomate"
-- "chicken" → "pollo"
-- "beef" / "meat" → "carne"
-- "fish" → "pescado"
-- "milk" → "leche"
-- "butter" → "mantequilla"
-- "cheese" → "queso"
-- "egg" / "eggs" → "huevos"
-Nunca uses nombres en italiano, inglés, francés ni portugués. Siempre en español peruano.
+REGLA CRÍTICA DE IDIOMA: TODOS los nombres de productos deben estar en español de Perú.
+Si no sabes el nombre en español peruano de un producto, OMÍTELO — es preferible omitirlo
+a escribirlo en italiano, inglés, francés u otro idioma. NUNCA uses palabras extranjeras.
+
+Traducciones obligatorias al español peruano:
+VERDURAS Y FRUTAS:
+- elote / choclo → choclo
+- aguacate / avocado → palta
+- batata / boniato / sweet potato → camote
+- banana / banano → plátano
+- zucchini / zapallito / courgette → zapallito italiano
+- blueberry → arándano
+- strawberry → fresa
+- pineapple → piña
+- corn → choclo
+- potato → papa
+- onion → cebolla
+- garlic → ajo
+- ginger → jengibre
+- tomato → tomate
+- spinach → espinaca
+- broccoli → brócoli
+- lettuce → lechuga
+- carrot → zanahoria
+- cucumber → pepino
+- beetroot → betarraga
+- pumpkin / zapallo → zapallo
+- mushroom / champiñón → champiñones
+
+HIERBAS:
+- basilico / basil / albahaca italiana → albahaca
+- cilantro / coriander → culantro (en Perú se dice culantro)
+- parsley → perejil
+- mint / hierbabuena → hierbabuena
+- oregano → orégano
+
+PROTEÍNAS Y LÁCTEOS:
+- chicken → pollo
+- beef / meat → carne
+- fish → pescado
+- pork → cerdo
+- milk → leche
+- butter → mantequilla
+- cheese → queso
+- egg / eggs → huevos
+- yogurt → yogur
+
+OTROS:
+- frijoles / porotos / beans → frejoles o menestras
+- rice → arroz
+- oil → aceite
+- sugar → azúcar
+- flour → harina
+- bread → pan
+- juice → jugo
+- water → agua
+- beer → cerveza
+- wine → vino
 """
 
 MATERIAL_NOTE = """
@@ -103,38 +132,38 @@ Si NO puedes ver el empaque con claridad (por ejemplo en un ticket de compra imp
 """
 
 def scan_receipt(image_bytes: bytes) -> list[dict]:
-    prompt = f"""Analiza esta imagen. Puede ser un ticket de compra de supermercado o una foto de alimentos/refrigerador.
+    prompt = f"""Analiza esta imagen de un ticket de compra o foto de alimentos.
 
-REGLAS ESTRICTAS:
-1. SOLO incluye productos alimenticios o de despensa (comida, bebidas, lácteos, frutas, verduras, carnes, etc). EXCLUYE productos de limpieza o higiene (detergente, jabón, shampoo, papel higiénico, pañales) aunque aparezcan en el mismo ticket: esos NO van en la lista.
-2. Si la imagen NO es un ticket de compra ni contiene alimentos reconocibles (por ejemplo: una tarjeta de presentación, un documento, un objeto no comestible, texto ilegible), responde exactamente: []
-3. Si no estás seguro de qué es un producto o su nombre es ambiguo, OMÍTELO. Es preferible omitir un producto dudoso que inventar uno incorrecto.
-4. NO inventes productos que no estén claramente visibles en la imagen.
-5. Ignora nombres de tiendas, direcciones, totales, impuestos, números de teléfono, RUC/RFC y cualquier texto que no sea un producto alimenticio.
-6. Si en el ticket aparece una cantidad mayor a 1 del mismo producto (ej: "2x Plátano", "3 Manzanas"), refleja esa cantidad real en "quantity" (ej: "2 unidades"), no la ignores ni la dejes en 1.
+REGLAS ESTRICTAS — léelas todas antes de responder:
+1. SOLO incluye alimentos y bebidas. EXCLUYE limpieza, higiene, papelería y cualquier no-alimento.
+2. Si la imagen no contiene alimentos reconocibles, responde exactamente: []
+3. Si NO puedes leer claramente el nombre de un producto, OMÍTELO. Nunca adivines ni inventes.
+4. Si el nombre de un producto no lo sabes en español peruano, OMÍTELO — nunca uses palabras en italiano, inglés u otro idioma.
+5. Ignora tiendas, direcciones, totales, impuestos, RUC/RFC, teléfonos.
+6. Si hay cantidad mayor a 1 (ej: "2x Plátano"), ponla en "quantity" (ej: "2 unidades").
 {PERU_SPANISH_NOTE}
 {MATERIAL_NOTE}
-Responde SOLO con un JSON válido, sin texto adicional, con este formato exacto:
+Responde SOLO con JSON válido, sin texto extra:
 [{{"name": "Leche Gloria", "price": 4.50, "quantity": "1L", "material": "carton"}}, ...]
-Si no hay productos alimenticios claros, responde: []"""
+Si no hay productos alimenticios claros: []"""
     text = _call_vision(prompt, image_bytes)
     items = _parse_json(text)
     return [it for it in items if _is_valid_food_item(it.get("name", ""))]
 
 def scan_fridge(image_bytes: bytes) -> list[dict]:
-    prompt = f"""Analiza esta foto del interior de un refrigerador o de alimentos.
+    prompt = f"""Analiza esta foto de un refrigerador o alimentos.
 
-REGLAS ESTRICTAS:
-1. SOLO identifica alimentos claramente visibles y reconocibles.
-2. Si un objeto no es claramente un alimento, o no puedes identificarlo con certeza, OMÍTELO.
-3. NO inventes alimentos que no estén en la imagen.
-4. Cuenta cuántas unidades del mismo alimento ves (ej: si hay 2 piñas, "quantity" debe decir "2 unidades", no "1 unidad").
+REGLAS ESTRICTAS — léelas todas antes de responder:
+1. SOLO identifica alimentos claramente visibles. Si no puedes identificarlo con total certeza, OMÍTELO.
+2. NO inventes ni supongas alimentos. Si algo es dudoso, no lo incluyas.
+3. Si NO sabes el nombre en español peruano de lo que ves, OMÍTELO — nunca escribas en italiano, inglés u otro idioma.
+4. Cuenta las unidades reales que ves (2 piñas → "2 unidades").
 {PERU_SPANISH_NOTE}
 {MATERIAL_NOTE}
-Responde SOLO con un JSON válido, sin texto adicional, con este formato exacto:
+Responde SOLO con JSON válido, sin texto extra:
 [{{"name": "Tomates", "quantity": "3 unidades", "category": "verduras", "material": "organico"}}, ...]
-Categorías posibles: frutas, verduras, lácteos, carnes, bebidas, otros
-Si no puedes identificar nada con certeza, responde: []"""
+Categorías: frutas, verduras, lácteos, carnes, bebidas, otros
+Si no identificas nada con certeza: []"""
     text = _call_vision(prompt, image_bytes)
     items = _parse_json(text)
     return [it for it in items if _is_valid_food_item(it.get("name", ""))]
