@@ -13,6 +13,36 @@ from models import init_db, get_db, Product, WasteLog, ProductStatus
 from expiry import calculate_expiry, get_status, get_shelf_life
 from gemini_service import init_gemini, scan_receipt, scan_fridge
 
+# Precios promedio estimados en soles peruanos (para cuando no se detecta precio)
+PRICE_ESTIMATES = {
+    "leche": 4.5, "yogur": 3.5, "queso": 12.0, "mantequilla": 7.5, "crema": 5.0,
+    "margarina": 5.5, "huevos": 8.0, "pollo": 18.0, "carne": 25.0, "pescado": 20.0,
+    "jamón": 9.0, "jamon": 9.0, "salchicha": 6.5, "hot dog": 6.5,
+    "tomate": 3.0, "lechuga": 2.0, "zanahoria": 2.5, "manzana": 4.0,
+    "naranja": 3.0, "mandarina": 3.0, "platano": 2.5, "banana": 2.5,
+    "palta": 4.0, "uva": 8.0, "pera": 4.0, "durazno": 5.0, "fresa": 6.0,
+    "piña": 5.0, "pina": 5.0, "sandia": 6.0, "melon": 5.0,
+    "limon": 2.0, "papa": 3.0, "cebolla": 2.5, "choclo": 2.0,
+    "pepino": 2.0, "brocoli": 4.0, "espinaca": 3.0, "camote": 2.5,
+    "pan": 2.5, "jugo": 6.0, "nectar": 4.0, "néctar": 4.0,
+    "refresco": 4.0, "gaseosa": 4.5, "cerveza": 5.0, "vino": 25.0, "agua": 2.0,
+    "aceite": 12.0, "vinagre": 4.0, "ketchup": 7.0, "mayonesa": 8.0,
+    "mostaza": 5.0, "salsa": 5.0, "mermelada": 8.0, "miel": 15.0,
+    "arroz": 5.0, "fideo": 4.0, "fideos": 4.0, "pasta": 4.0, "harina": 4.0,
+    "azúcar": 4.0, "azucar": 4.0, "sal": 2.0,
+    "atún": 5.5, "atun": 5.5, "sardina": 4.5, "conserva": 5.0,
+    "lenteja": 5.0, "frijol": 4.5, "garbanzo": 5.0, "avena": 6.0,
+    "galleta": 4.0, "chips": 3.5, "chocolate": 4.5,
+    "default": 5.0,
+}
+
+def estimate_price(name: str) -> float:
+    name_lower = name.lower()
+    for key, price in PRICE_ESTIMATES.items():
+        if key != "default" and key in name_lower:
+            return price
+    return PRICE_ESTIMATES["default"]
+
 app = FastAPI(title="QuipuRecicla API")
 
 app.add_middleware(
@@ -46,10 +76,11 @@ async def scan_receipt_endpoint(
     for item in items:
         purchase_date = datetime.utcnow()
         expiry_date = calculate_expiry(item["name"], purchase_date)
+        raw_price = item.get("price", 0.0) or 0.0
         product = Product(
             name=item["name"],
             quantity=item.get("quantity", "1"),
-            purchase_price=item.get("price", 0.0),
+            purchase_price=raw_price if raw_price > 0 else estimate_price(item["name"]),
             purchase_date=purchase_date,
             expiry_date=expiry_date,
             status=get_status(expiry_date),
@@ -79,6 +110,7 @@ async def scan_fridge_endpoint(
             name=item["name"],
             category=item.get("category", "otros"),
             quantity=item.get("quantity", "1"),
+            purchase_price=estimate_price(item["name"]),
             purchase_date=purchase_date,
             expiry_date=expiry_date,
             status=get_status(expiry_date),
@@ -167,10 +199,11 @@ class ProductCreate(BaseModel):
 def create_product(data: ProductCreate, db: Session = Depends(get_db), did: Optional[str] = Depends(get_device)):
     purchase_date = datetime.utcnow()
     expiry_date = calculate_expiry(data.name, purchase_date)
+    effective_price = data.purchase_price if data.purchase_price > 0 else estimate_price(data.name)
     product = Product(
         name=data.name,
         quantity=data.quantity,
-        purchase_price=data.purchase_price,
+        purchase_price=effective_price,
         purchase_date=purchase_date,
         expiry_date=expiry_date,
         status=get_status(expiry_date),
