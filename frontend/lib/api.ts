@@ -92,11 +92,11 @@ export async function scanImage(file: File, mode: "receipt" | "fridge" = "receip
   return res.json();
 }
 
-export async function addProduct(name: string, quantity: string, price: number, material?: string | null) {
+export async function addProduct(name: string, quantity: string, price: number, material?: string | null, category?: string) {
   const res = await fetch(`${API}/products`, {
     method: "POST",
     headers: { ...headers(), "Content-Type": "application/json" },
-    body: JSON.stringify({ name, quantity, purchase_price: price, device_id: getDeviceId(), material }),
+    body: JSON.stringify({ name, quantity, purchase_price: price, device_id: getDeviceId(), material: material ?? null, category: category ?? "otros" }),
   });
   return res.json();
 }

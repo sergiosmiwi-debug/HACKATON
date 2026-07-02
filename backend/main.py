@@ -63,64 +63,36 @@ def get_device(x_device_id: Optional[str] = Header(default=None)) -> Optional[st
 # --- Scan ---
 
 @app.post("/scan/receipt")
-async def scan_receipt_endpoint(
-    file: UploadFile = File(...),
-    device_id: Optional[str] = None,
-    db: Session = Depends(get_db),
-    did: Optional[str] = Depends(get_device),
-):
-    effective_device = device_id or did
+async def scan_receipt_endpoint(file: UploadFile = File(...)):
     image_bytes = await file.read()
     items = scan_receipt(image_bytes)
-    created = []
+    result = []
     for item in items:
-        purchase_date = datetime.utcnow()
-        expiry_date = calculate_expiry(item["name"], purchase_date)
-        raw_price = item.get("price", 0.0) or 0.0
-        product = Product(
-            name=item["name"],
-            quantity=item.get("quantity", "1"),
-            purchase_price=raw_price if raw_price > 0 else estimate_price(item["name"]),
-            purchase_date=purchase_date,
-            expiry_date=expiry_date,
-            status=get_status(expiry_date),
-            device_id=effective_device,
-            material=item.get("material") if item.get("material") != "desconocido" else None,
-        )
-        db.add(product)
-        created.append(item["name"])
-    db.commit()
-    return {"detected": created, "count": len(created)}
+        mat = item.get("material")
+        result.append({
+            "name":     item["name"],
+            "quantity": item.get("quantity", "1"),
+            "price":    item.get("price") or estimate_price(item["name"]),
+            "material": mat if mat and mat != "desconocido" else None,
+            "category": item.get("category", "otros"),
+        })
+    return {"items": result, "count": len(result)}
 
 @app.post("/scan/fridge")
-async def scan_fridge_endpoint(
-    file: UploadFile = File(...),
-    device_id: Optional[str] = None,
-    db: Session = Depends(get_db),
-    did: Optional[str] = Depends(get_device),
-):
-    effective_device = device_id or did
+async def scan_fridge_endpoint(file: UploadFile = File(...)):
     image_bytes = await file.read()
     items = scan_fridge(image_bytes)
-    created = []
+    result = []
     for item in items:
-        purchase_date = datetime.utcnow()
-        expiry_date = calculate_expiry(item["name"], purchase_date)
-        product = Product(
-            name=item["name"],
-            category=item.get("category", "otros"),
-            quantity=item.get("quantity", "1"),
-            purchase_price=estimate_price(item["name"]),
-            purchase_date=purchase_date,
-            expiry_date=expiry_date,
-            status=get_status(expiry_date),
-            device_id=effective_device,
-            material=item.get("material") if item.get("material") != "desconocido" else None,
-        )
-        db.add(product)
-        created.append(item["name"])
-    db.commit()
-    return {"detected": created, "count": len(created)}
+        mat = item.get("material")
+        result.append({
+            "name":     item["name"],
+            "quantity": item.get("quantity", "1"),
+            "price":    estimate_price(item["name"]),
+            "material": mat if mat and mat != "desconocido" else None,
+            "category": item.get("category", "otros"),
+        })
+    return {"items": result, "count": len(result)}
 
 # --- Products ---
 
@@ -194,6 +166,7 @@ class ProductCreate(BaseModel):
     purchase_price: float = 0.0
     device_id: Optional[str] = None
     material: Optional[str] = None
+    category: str = "otros"
 
 @app.post("/products")
 def create_product(data: ProductCreate, db: Session = Depends(get_db), did: Optional[str] = Depends(get_device)):
@@ -202,6 +175,7 @@ def create_product(data: ProductCreate, db: Session = Depends(get_db), did: Opti
     effective_price = data.purchase_price if data.purchase_price > 0 else estimate_price(data.name)
     product = Product(
         name=data.name,
+        category=data.category,
         quantity=data.quantity,
         purchase_price=effective_price,
         purchase_date=purchase_date,

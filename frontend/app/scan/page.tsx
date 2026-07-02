@@ -11,7 +11,7 @@ import {
 } from "@phosphor-icons/react";
 import MusicButton from "@/components/MusicButton";
 
-type Item = { name: string; price?: number; quantity?: string };
+type Item = { name: string; price?: number; quantity?: string; material?: string | null; category?: string };
 type VoiceItem = { name: string; quantity: string; material: string | null };
 type InputMode = "photo" | "voice" | null;
 
@@ -99,7 +99,7 @@ export default function ScanPage() {
     setLoading(true);
     try {
       const r = await scanImage(file);
-      const items: Item[] = (r.detected ?? []).map((name: string) => ({ name }));
+      const items: Item[] = (r.items ?? []);
       setDetected(items);
       setSelected(new Set(items.map((_: any, i: number) => i)));
       localStorage.setItem("qr_scans", String(stats.scans + 1));
@@ -110,10 +110,10 @@ export default function ScanPage() {
   async function handleSave() {
     setLoading(true);
     const items = inputMode === "voice"
-      ? voiceItems.map(v => ({ name: v.name, quantity: v.quantity, price: 0, material: v.material }))
-      : [...selected].map(i => ({ name: detected[i].name, quantity: detected[i].quantity ?? "1", price: detected[i].price ?? 0, material: null as string | null }));
+      ? voiceItems.map(v => ({ name: v.name, quantity: v.quantity, price: 0, material: v.material, category: "otros" }))
+      : [...selected].map(i => ({ name: detected[i].name, quantity: detected[i].quantity ?? "1", price: detected[i].price ?? 0, material: detected[i].material ?? null, category: detected[i].category ?? "otros" }));
     for (const item of items) {
-      await addProduct(item.name, item.quantity, item.price, item.material);
+      await addProduct(item.name, item.quantity, item.price, item.material, item.category);
     }
     const prev = parseInt(localStorage.getItem("qr_products") || "0");
     localStorage.setItem("qr_products", String(prev + items.length));
